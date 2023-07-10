@@ -61,7 +61,7 @@ function onClick() {
     .then(green)
     .catch(red)
     .finally(async () => {
-      await sleep(2)
+      await sleep(0.5)
       base()
     })
 }
