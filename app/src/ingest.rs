@@ -1,16 +1,18 @@
-use std::time::Duration;
+use std::{fmt::Display, time::Duration};
 
 use axum::{
-    http::{StatusCode, HeaderValue, Method},
+    error_handling::HandleErrorLayer,
+    extract::State,
+    http::{HeaderValue, StatusCode},
     response::IntoResponse,
     routing::{get, post},
-    Json, Router, extract::State, error_handling::HandleErrorLayer,
+    Json, Router,
 };
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use tower::{BoxError, ServiceBuilder};
+use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
-use tower_http::cors::{CorsLayer, Any};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -59,14 +61,23 @@ pub async fn start(port: u16, database_url: String) {
         .unwrap();
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+struct AddChapter {
+    book: String,
+    name: String,
+    content: String,
+    number_in_book: i16,
+}
+
+impl Display for AddChapter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} - {} #{}", self.book, self.name, self.number_in_book)
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 enum ApiRequest {
-    AddChapter {
-        book: String,
-        chapter: String,
-        content: String,
-        chapter_in_book: u16,
-    },
+    AddChapter(AddChapter),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -74,36 +85,18 @@ enum ApiResponse {
     AddChapter { success: bool },
 }
 
-#[derive(Debug, Deserialize)]
-struct AddChapter {
-    book: String,
-    name: String,
-    content: String,
-    chapter_in_book: u16,
-}
-
 #[axum::debug_handler]
-async fn add_chapter(State(pool): State<PgPool>, Json(input): Json<AddChapter>) -> impl IntoResponse {
-    let chapter = Chapter {
-        book: input.book,
-        name: input.name,
-        content: input.content,
-        chapter_in_book: input.chapter_in_book,
-    };
-    println!("Received chapter: {chapter:#?}");
-
-    #[derive(Debug)]
-    struct Book {
-        id: i32,
-        name: String,
-        chapter_count: Option<i16>,
-    }
+async fn add_chapter(
+    State(pool): State<PgPool>,
+    Json(input): Json<AddChapter>,
+) -> impl IntoResponse {
+    println!("Received chapter: {input}");
 
     let book: Option<Book> = {
         sqlx::query_as!(
             Book,
             "SELECT id, name, chapter_count FROM books b WHERE b.name = $1",
-            &chapter.book,
+            input.book,
         )
         .fetch_optional(&pool)
         .await
@@ -112,19 +105,51 @@ async fn add_chapter(State(pool): State<PgPool>, Json(input): Json<AddChapter>) 
 
     match book {
         None => {
-            println!("Inserting new book: {}", chapter.book);
-            sqlx::query!("INSERT INTO books (name) VALUES ($1)", &chapter.book)
+            println!("Inserting new book: {}", input.book);
+            sqlx::query!("INSERT INTO books (name) VALUES ($1)", input.book)
                 .execute(&pool)
                 .await
                 .unwrap();
-        },
-        Some (book) => {
-            println!("{book:#?}");
-            todo!();
+        }
+        Some(book) => {
+            println!("Inserting new chapter: {}", input);
+            if let Ok(_) = sqlx::query!(
+                "INSERT INTO chapters (
+                    book_id,
+                    name,
+                    content,
+                    number_in_book
+                    ) VALUES ($1, $2, $3, $4)",
+                book.id,
+                input.name,
+                input.content,
+                input.number_in_book,
+            )
+            .execute(&pool)
+            .await
+            {
+                let count = match book.chapter_count {
+                    None => 1,
+                    Some(c) => c + 1,
+                };
+                sqlx::query!(
+                    "UPDATE books
+                    SET chapter_count = $2
+                    WHERE id = $1",
+                    book.id,
+                    count,
+                )
+                .execute(&pool)
+                .await
+                .unwrap();
+            }
         }
     }
 
-    (StatusCode::CREATED, Json(chapter))
+    (
+        StatusCode::CREATED,
+        Json(ApiResponse::AddChapter { success: true }),
+    )
 }
 
 // basic handler that responds with a static string
@@ -142,10 +167,34 @@ async fn mk_pool(url: String) -> PgPool {
     pool
 }
 
+#[derive(Debug)]
+struct Book {
+    id: i32,
+    #[allow(dead_code)]
+    name: String,
+    #[allow(dead_code)]
+    chapter_count: Option<i16>,
+}
+
 #[derive(Debug, Serialize, Clone)]
 struct Chapter {
-    book: String,
+    id: i32,
+    book_id: i32,
     name: String,
     content: String,
-    chapter_in_book: u16,
+    number_in_book: i16,
+    #[allow(dead_code)]
+    processed: bool,
+    #[allow(dead_code)]
+    processed_at: Option<String>,
+}
+
+impl Display for Chapter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "({}) {} #{}",
+            self.book_id, self.name, self.number_in_book
+        )
+    }
 }
