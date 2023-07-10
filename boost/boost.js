@@ -53,7 +53,7 @@ function onClick() {
   const chapter = {
     book: metadata.novelName,
     name: metadata.chapterTitle,
-    chapter_in_book: metadata.chapterNo,
+    number_in_book: metadata.chapterNo,
     content,
   }
 
