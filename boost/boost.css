@@ -1,0 +1,37 @@
+.wuxia2kindle-btn {
+  width: 2rem;
+  height: 2rem;
+  background-color: hsl(9, 100%, 64%);
+  position: fixed;
+  bottom: .75rem;
+  right: .75rem;
+  z-index: 2000;
+  border-radius: 100%;
+  cursor: pointer;
+}
+
+.wuxia2kindle-btn:hover {
+  background-color: hsl(9, 100%, 70%);
+}
+
+.wuxia2kindle-btn:active {
+  background-color: hsl(9, 100%, 60%);
+}
+
+.wuxia2kindle-btn.green {
+  background-color: lightgreen;
+}
+
+.wuxia2kindle-btn.red {
+  background-color: red;
+}
+
+.wuxia2kindle-btn::before {
+  content: "☁️";
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.25rem;
+  width: 2rem;
+  height: 2rem;
+}
