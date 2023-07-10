@@ -29,7 +29,7 @@ pub async fn start(port: u16, database_url: String) {
 
     // build our application with a route
     let app = Router::new()
-        .route("/health", get(root))
+        .route("/health", get(health))
         .route("/chapter", post(add_chapter))
         .layer(
             CorsLayer::new()
@@ -153,7 +153,7 @@ async fn add_chapter(
 }
 
 // basic handler that responds with a static string
-async fn root() -> &'static str {
+async fn health() -> &'static str {
     "Healthy!"
 }
 
