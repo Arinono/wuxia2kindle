@@ -1,4 +1,6 @@
 mod ingest;
+mod worker;
+mod pool;
 
 use clap::{Parser, Subcommand};
 
@@ -18,6 +20,10 @@ enum Commands {
         #[arg(long)]
         database_url: String,
     },
+    Worker {
+        #[arg(long)]
+        database_url: String,
+    }
 }
 
 fn main() {
@@ -26,6 +32,9 @@ fn main() {
     match args.command {
         Commands::Ingest { port, database_url } => {
             ingest::start(port, database_url);
+        }
+        Commands::Worker { database_url } => {
+            worker::start(database_url);
         }
     }
 }

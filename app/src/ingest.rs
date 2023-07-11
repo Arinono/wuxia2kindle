@@ -1,5 +1,4 @@
-use std::{fmt::Display, time::Duration};
-
+use crate::pool;
 use axum::{
     error_handling::HandleErrorLayer,
     extract::State,
@@ -9,7 +8,8 @@ use axum::{
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgPoolOptions, PgPool};
+use sqlx::{types::JsonValue, PgPool};
+use std::{fmt::Display, time::Duration};
 use tower::{BoxError, ServiceBuilder};
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
@@ -25,12 +25,13 @@ pub async fn start(port: u16, database_url: String) {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let pool = mk_pool(database_url).await;
+    let pool = pool::mk_pool(database_url).await;
 
     // build our application with a route
     let app = Router::new()
         .route("/health", get(health))
         .route("/chapter", post(add_chapter))
+        .route("/export", post(add_to_queue))
         .layer(
             CorsLayer::new()
                 .allow_origin("*".parse::<HeaderValue>().unwrap())
@@ -75,14 +76,37 @@ impl Display for AddChapter {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+struct AddToQueue {
+    kind: ExportKinds,
+}
+
+impl Display for ExportKinds {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ExportKinds::ChaptersRange { book_id, chapters } => write!(
+                f,
+                "{}: Chapters from {} to {}",
+                book_id, chapters.0, chapters.1
+            ),
+            ExportKinds::ChaptersList { book_id, chapters } => {
+                write!(f, "{}: {} chapters", book_id, chapters.len())
+            }
+            _ => todo!(),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 enum ApiRequest {
     AddChapter(AddChapter),
+    AddToQueue(AddToQueue),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 enum ApiResponse {
     AddChapter { success: bool },
+    AddToQueue { success: bool },
 }
 
 #[axum::debug_handler]
@@ -152,19 +176,29 @@ async fn add_chapter(
     )
 }
 
-// basic handler that responds with a static string
-async fn health() -> &'static str {
-    "Healthy!"
+async fn add_to_queue(
+    State(pool): State<PgPool>,
+    Json(input): Json<AddToQueue>,
+) -> impl IntoResponse {
+    println!("Received export: {}", input.kind);
+    // todo check input validity, such as range start < end and stuff like this
+
+    sqlx::query!(
+        "INSERT INTO exports (meta) VALUES ($1)",
+        input.kind.to_json(),
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    (
+        StatusCode::CREATED,
+        Json(ApiResponse::AddToQueue { success: true }),
+    )
 }
 
-async fn mk_pool(url: String) -> PgPool {
-    let pool = PgPoolOptions::new()
-        .max_connections(5)
-        .connect(&url)
-        .await
-        .unwrap();
-
-    pool
+async fn health() -> &'static str {
+    "Healthy!"
 }
 
 #[derive(Debug)]
@@ -196,5 +230,81 @@ impl Display for Chapter {
             "({}) {} #{}",
             self.book_id, self.name, self.number_in_book
         )
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+enum ExportKinds {
+    Anthology,
+    FullBook(i16),
+    SingleChapter(i16),
+    // will error if there is a blank spot in the range
+    ChaptersRange { book_id: i16, chapters: (i16, i16) },
+    ChaptersList { book_id: i16, chapters: Vec<i16> },
+}
+
+impl ExportKinds {
+    fn to_json(&self) -> JsonValue {
+        match self {
+            ExportKinds::ChaptersRange { chapters, .. } => serde_json::to_value(self).unwrap(),
+            _ => todo!(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+struct Export {
+    id: i32,
+    meta: ExportKinds,
+    created_at: String,
+    processing_started_at: Option<String>,
+    processed_at: Option<String>,
+    sent: bool,
+    error: Option<String>,
+}
+
+enum ExportState {
+    Created,
+    Processing,
+    Processed,
+    Sent,
+    Failed,
+}
+
+impl Display for ExportState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let state = match self {
+            ExportState::Sent => "sent",
+            ExportState::Processed => "processed",
+            ExportState::Processing => "processing",
+            ExportState::Created => "created",
+            ExportState::Failed => "failed",
+        };
+
+        write!(f, "{state}")
+    }
+}
+
+impl Export {
+    fn get_state(&self) -> ExportState {
+        match self.error {
+            Some(_) => ExportState::Failed,
+            None => match self.sent {
+                true => ExportState::Sent,
+                false => match self.processed_at {
+                    Some(_) => ExportState::Processed,
+                    None => match self.processing_started_at {
+                        Some(_) => ExportState::Processing,
+                        None => ExportState::Created,
+                    },
+                },
+            },
+        }
+    }
+}
+
+impl Display for Export {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} -> {}", self.get_state(), self.meta)
     }
 }
