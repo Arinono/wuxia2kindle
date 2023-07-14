@@ -20,7 +20,7 @@ function sleep(t) {
 
 function getContent() {
   const contents = Array.from(document.querySelectorAll('.chapter-content p'))
-  const content = contents.map(el => el.innerText).join('\n\n')
+  const content = contents.map(el => el.innerText).join('<p>')
 
   return content
 }

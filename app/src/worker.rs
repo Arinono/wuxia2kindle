@@ -4,7 +4,8 @@ use sqlx::PgPool;
 use tokio::time::interval;
 
 use crate::{
-    models::{Chapter, Export, ExportKinds},
+    epub::Epub,
+    models::{Book, Chapter, Export, ExportKinds},
     pool,
 };
 
@@ -81,8 +82,9 @@ async fn process(export: Export, pool: &PgPool) -> Result<(), String> {
                     Chapter,
                     "SELECT * FROM chapters
                    WHERE book_id = $1
-                   AND number_in_book >= $2
-                   AND number_in_book <= $3",
+                       AND number_in_book >= $2
+                       AND number_in_book <= $3
+                   ORDER BY number_in_book ASC",
                     book_id,
                     chapters.0,
                     chapters.1,
@@ -92,7 +94,30 @@ async fn process(export: Export, pool: &PgPool) -> Result<(), String> {
                 .unwrap()
             };
 
-            println!("{db_chapters:#?}");
+            let o_book: Option<Book> = {
+                sqlx::query_as!(
+                    Book,
+                    "SELECT *
+                    FROM books
+                    WHERE id = $1",
+                    book_id,
+                )
+                .fetch_optional(pool)
+                .await
+                .unwrap()
+            };
+
+            if let Some(book) = o_book.clone() {
+                let epub = Epub {
+                    title: book.name,
+                    chapters: db_chapters
+                        .into_iter()
+                        .map(|c| (c.name, c.content))
+                        .collect::<Vec<(String, String)>>(),
+                };
+
+                println!("{epub:#?}");
+            }
         }
         _ => todo!(),
     }

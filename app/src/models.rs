@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::types::{JsonValue, chrono::{DateTime, Utc}};
 use std::fmt::Display;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Book {
     pub id: i32,
     #[allow(dead_code)]

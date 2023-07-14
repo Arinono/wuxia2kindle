@@ -1,4 +1,5 @@
 mod models;
+mod epub;
 mod ingest;
 mod worker;
 mod pool;
