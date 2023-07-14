@@ -1,27 +1,101 @@
 use std::time::Duration;
 
-use sqlx::{pool::PoolConnection, Postgres};
+use sqlx::PgPool;
 use tokio::time::interval;
 
-use crate::pool;
+use crate::{
+    models::{Chapter, Export, ExportKinds},
+    pool,
+};
 
 #[tokio::main]
 pub async fn start(database_url: String) {
-    let pool = pool::mk_pool(database_url.clone()).await;
     let mut interval = interval(Duration::from_secs(60));
 
     loop {
-        let connection = pool.acquire().await.unwrap();
-        tokio::spawn(async move {
-            export(connection).await.close().await.unwrap();
-        });
         interval.tick().await;
+        let pool = pool::mk_pool(database_url.clone()).await;
+        tokio::spawn(async move {
+            export(pool).await.close().await;
+        });
     }
 }
 
-async fn export(connection: PoolConnection<Postgres>) -> PoolConnection<Postgres> {
+async fn export(pool: PgPool) -> PgPool {
     let exports: Vec<Export> = {
+        sqlx::query_as!(
+            Export,
+            "SELECT * FROM exports WHERE processing_started_at IS NULL LIMIT 10",
+        )
+        .fetch_all(&pool)
+        .await
+        .unwrap()
     };
 
-    connection
+    for export in exports.into_iter() {
+        sqlx::query!(
+            "UPDATE exports 
+            SET processing_started_at = CURRENT_TIMESTAMP
+            WHERE id = $1",
+            export.id,
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        if let Err(err) = process(export.clone(), &pool).await {
+            sqlx::query!(
+                "UPDATE exports 
+                SET processed_at = CURRENT_TIMESTAMP,
+                    error = $2
+                WHERE id = $1",
+                export.id,
+                err,
+            )
+            .execute(&pool)
+            .await
+            .unwrap();
+        } else {
+            sqlx::query!(
+                "UPDATE exports 
+                SET processed_at = CURRENT_TIMESTAMP
+                WHERE id = $1",
+                export.id,
+            )
+            .execute(&pool)
+            .await
+            .unwrap();
+        }
+    }
+
+    pool
+}
+
+async fn process(export: Export, pool: &PgPool) -> Result<(), String> {
+    println!("Processing export {}", export.id);
+
+    match export.meta {
+        ExportKinds::ChaptersRange { book_id, chapters } => {
+            let db_chapters: Vec<Chapter> = {
+                sqlx::query_as!(
+                    Chapter,
+                    "SELECT * FROM chapters
+                   WHERE book_id = $1
+                   AND number_in_book >= $2
+                   AND number_in_book <= $3",
+                    book_id,
+                    chapters.0,
+                    chapters.1,
+                )
+                .fetch_all(pool)
+                .await
+                .unwrap()
+            };
+
+            println!("{db_chapters:#?}");
+        }
+        _ => todo!(),
+    }
+
+    Ok(())
 }

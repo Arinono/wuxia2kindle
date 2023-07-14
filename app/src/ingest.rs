@@ -1,4 +1,4 @@
-use crate::pool;
+use crate::{pool, models::{ExportKinds, Book}};
 use axum::{
     error_handling::HandleErrorLayer,
     extract::State,
@@ -7,8 +7,8 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use sqlx::PgPool;
 use serde::{Deserialize, Serialize};
-use sqlx::{types::JsonValue, PgPool};
 use std::{fmt::Display, time::Duration};
 use tower::{BoxError, ServiceBuilder};
 use tower_http::cors::{Any, CorsLayer};
@@ -89,9 +89,6 @@ impl Display for ExportKinds {
                 "{}: Chapters from {} to {}",
                 book_id, chapters.0, chapters.1
             ),
-            ExportKinds::ChaptersList { book_id, chapters } => {
-                write!(f, "{}: {} chapters", book_id, chapters.len())
-            }
             _ => todo!(),
         }
     }
@@ -185,7 +182,7 @@ async fn add_to_queue(
 
     sqlx::query!(
         "INSERT INTO exports (meta) VALUES ($1)",
-        input.kind.to_json(),
+        serde_json::to_value(input.kind).unwrap(),
     )
     .execute(&pool)
     .await
@@ -199,112 +196,4 @@ async fn add_to_queue(
 
 async fn health() -> &'static str {
     "Healthy!"
-}
-
-#[derive(Debug)]
-struct Book {
-    id: i32,
-    #[allow(dead_code)]
-    name: String,
-    #[allow(dead_code)]
-    chapter_count: Option<i16>,
-}
-
-#[derive(Debug, Serialize, Clone)]
-struct Chapter {
-    id: i32,
-    book_id: i32,
-    name: String,
-    content: String,
-    number_in_book: i16,
-    #[allow(dead_code)]
-    processed: bool,
-    #[allow(dead_code)]
-    processed_at: Option<String>,
-}
-
-impl Display for Chapter {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "({}) {} #{}",
-            self.book_id, self.name, self.number_in_book
-        )
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-enum ExportKinds {
-    Anthology,
-    FullBook(i16),
-    SingleChapter(i16),
-    // will error if there is a blank spot in the range
-    ChaptersRange { book_id: i16, chapters: (i16, i16) },
-    ChaptersList { book_id: i16, chapters: Vec<i16> },
-}
-
-impl ExportKinds {
-    fn to_json(&self) -> JsonValue {
-        match self {
-            ExportKinds::ChaptersRange { chapters, .. } => serde_json::to_value(self).unwrap(),
-            _ => todo!(),
-        }
-    }
-}
-
-#[derive(Debug, Serialize)]
-struct Export {
-    id: i32,
-    meta: ExportKinds,
-    created_at: String,
-    processing_started_at: Option<String>,
-    processed_at: Option<String>,
-    sent: bool,
-    error: Option<String>,
-}
-
-enum ExportState {
-    Created,
-    Processing,
-    Processed,
-    Sent,
-    Failed,
-}
-
-impl Display for ExportState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let state = match self {
-            ExportState::Sent => "sent",
-            ExportState::Processed => "processed",
-            ExportState::Processing => "processing",
-            ExportState::Created => "created",
-            ExportState::Failed => "failed",
-        };
-
-        write!(f, "{state}")
-    }
-}
-
-impl Export {
-    fn get_state(&self) -> ExportState {
-        match self.error {
-            Some(_) => ExportState::Failed,
-            None => match self.sent {
-                true => ExportState::Sent,
-                false => match self.processed_at {
-                    Some(_) => ExportState::Processed,
-                    None => match self.processing_started_at {
-                        Some(_) => ExportState::Processing,
-                        None => ExportState::Created,
-                    },
-                },
-            },
-        }
-    }
-}
-
-impl Display for Export {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} -> {}", self.get_state(), self.meta)
-    }
 }

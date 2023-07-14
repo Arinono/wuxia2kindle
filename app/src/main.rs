@@ -1,3 +1,4 @@
+mod models;
 mod ingest;
 mod worker;
 mod pool;
