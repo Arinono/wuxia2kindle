@@ -1,4 +1,7 @@
-use crate::{pool, models::{ExportKinds, Book}};
+use crate::{
+    models::{Book, ExportKinds},
+    pool,
+};
 use axum::{
     error_handling::HandleErrorLayer,
     extract::State,
@@ -7,8 +10,8 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use sqlx::PgPool;
 use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
 use std::{fmt::Display, time::Duration};
 use tower::{BoxError, ServiceBuilder};
 use tower_http::cors::{Any, CorsLayer};
@@ -68,6 +71,8 @@ struct AddChapter {
     name: String,
     content: String,
     number_in_book: i16,
+    author: Option<String>,
+    translator: Option<String>,
 }
 
 impl Display for AddChapter {
@@ -116,7 +121,7 @@ async fn add_chapter(
     let book: Option<Book> = {
         sqlx::query_as!(
             Book,
-            "SELECT id, name, chapter_count FROM books b WHERE b.name = $1",
+            "SELECT * FROM books b WHERE b.name = $1",
             input.book,
         )
         .fetch_optional(&pool)
@@ -127,10 +132,15 @@ async fn add_chapter(
     match book {
         None => {
             println!("Inserting new book: {}", input.book);
-            sqlx::query!("INSERT INTO books (name) VALUES ($1)", input.book)
-                .execute(&pool)
-                .await
-                .unwrap();
+            sqlx::query!(
+                "INSERT INTO books (name, author, translator) VALUES ($1, $2, $3)",
+                input.book,
+                input.author,
+                input.translator,
+            )
+            .execute(&pool)
+            .await
+            .unwrap();
         }
         Some(book) => {
             println!("Inserting new chapter: {}", input);

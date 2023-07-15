@@ -5,10 +5,10 @@ use std::fmt::Display;
 #[derive(Debug, Clone)]
 pub struct Book {
     pub id: i32,
-    #[allow(dead_code)]
     pub name: String,
-    #[allow(dead_code)]
     pub chapter_count: Option<i16>,
+    pub author: Option<String>,
+    pub translator: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]

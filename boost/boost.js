@@ -54,6 +54,8 @@ function onClick() {
     book: metadata.novelName,
     name: metadata.chapterTitle,
     number_in_book: metadata.chapterNo,
+    author: metadata.novelWriter,
+    translator: metadata.novelTranslator,
     content,
   }
 

@@ -17,6 +17,16 @@
         "ordinal": 2,
         "name": "chapter_count",
         "type_info": "Int2"
+      },
+      {
+        "ordinal": 3,
+        "name": "author",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "translator",
+        "type_info": "Varchar"
       }
     ],
     "parameters": {
@@ -27,6 +37,8 @@
     "nullable": [
       false,
       false,
+      true,
+      true,
       true
     ]
   },
