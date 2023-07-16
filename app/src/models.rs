@@ -9,6 +9,7 @@ pub struct Book {
     pub chapter_count: Option<i16>,
     pub author: Option<String>,
     pub translator: Option<String>,
+    pub cover: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]

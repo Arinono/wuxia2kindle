@@ -8,10 +8,10 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.71"
 axum = { version = "0.6.18", features = ["macros"] }
+base64 = "0.21.2"
 chrono = { version = "0.4.26", features = ["serde"] }
 clap = { version = "4.3.11", features = ["derive"] }
 epub-builder = "0.5.0"
-rayon = "1.7.0"
 serde = { version = "1.0.170", features = ["derive"] }
 serde_json = "1.0.100"
 sqlx = { version = "0.7.0", features = ["postgres", "runtime-tokio-rustls", "time", "chrono"] }
@@ -20,3 +20,4 @@ tower = { version = "0.4.13", features = ["util", "timeout"] }
 tower-http = { version = "0.4.1", features = ["cors", "add-extension", "trace"] }
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
+uuid = { version = "1.4.0", features = ["v4"] }

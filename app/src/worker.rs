@@ -110,13 +110,18 @@ async fn process(export: Export, pool: &PgPool) -> Result<(), String> {
             if let Some(book) = o_book.clone() {
                 let epub = Epub {
                     title: book.name,
+                    author: book.author,
+                    translator: book.translator,
+                    cover: book.cover,
                     chapters: db_chapters
                         .into_iter()
                         .map(|c| (c.name, c.content))
                         .collect::<Vec<(String, String)>>(),
                 };
 
-                println!("{epub:#?}");
+                let filepath = epub.generate().unwrap();
+
+                println!("Epub generated at: {filepath}");
             }
         }
         _ => todo!(),
