@@ -34,6 +34,7 @@ pub async fn start(port: u16, database_url: String) {
     let app = Router::new()
         .route("/health", get(health))
         .route("/chapter", post(add_chapter))
+        .route("/books", get(get_books))
         .route("/export", post(add_to_queue))
         .layer(
             CorsLayer::new()
@@ -103,12 +104,14 @@ impl Display for ExportKinds {
 enum ApiRequest {
     AddChapter(AddChapter),
     AddToQueue(AddToQueue),
+    GetBooks,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 enum ApiResponse {
     AddChapter { success: bool },
     AddToQueue { success: bool },
+    GetBooks { data: Vec<Book> },
 }
 
 #[axum::debug_handler]
@@ -201,6 +204,23 @@ async fn add_to_queue(
     (
         StatusCode::CREATED,
         Json(ApiResponse::AddToQueue { success: true }),
+    )
+}
+
+async fn get_books(
+    State(pool): State<PgPool>,
+) -> impl IntoResponse {
+    let books = sqlx::query_as!(
+        Book,
+        "SELECT * from books",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+
+    (
+        StatusCode::OK,
+        Json(ApiResponse::GetBooks { data: books }),
     )
 }
 

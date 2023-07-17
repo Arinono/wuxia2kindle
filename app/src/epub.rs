@@ -63,7 +63,7 @@ impl Epub {
             .inline_toc();
 
         for (idx, chapter) in self.chapters.iter().enumerate() {
-            let title = wrap_html(format!("<h2>{}</h2>", chapter.0));
+            let title = format!("<h2>{}</h2>", chapter.0);
             let chapter_idx = idx + 1;
 
             builder

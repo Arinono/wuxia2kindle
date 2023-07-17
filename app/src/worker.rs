@@ -72,7 +72,7 @@ async fn export(pool: PgPool) -> PgPool {
     pool
 }
 
-async fn process(export: Export, pool: &PgPool) -> Result<(), String> {
+async fn process(export: Export, pool: &PgPool) -> Result<String, String> {
     println!("Processing export {}", export.id);
 
     match export.meta {
@@ -122,10 +122,11 @@ async fn process(export: Export, pool: &PgPool) -> Result<(), String> {
                 let filepath = epub.generate().unwrap();
 
                 println!("Epub generated at: {filepath}");
+                return Ok(filepath);
             }
+
+            return Err("book not found ?".to_owned());
         }
         _ => todo!(),
     }
-
-    Ok(())
 }

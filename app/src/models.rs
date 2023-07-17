@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::types::{JsonValue, chrono::{DateTime, Utc}};
 use std::fmt::Display;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Book {
     pub id: i32,
     pub name: String,

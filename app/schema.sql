@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS chapters (
     book_id int NOT null,
     name varchar(100) NOT null,
     content text NOT null,
-    number_in_book int NOT null UNIQUE,
+    number_in_book int NOT null UNIQUE
 );
 
 CREATE UNIQUE INDEX chapters_book_number_key on chapters(book_id, number_in_book);
