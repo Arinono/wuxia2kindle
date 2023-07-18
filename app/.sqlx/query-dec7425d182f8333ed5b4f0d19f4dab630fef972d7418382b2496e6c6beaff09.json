@@ -16,7 +16,7 @@
       {
         "ordinal": 2,
         "name": "chapter_count",
-        "type_info": "Int2"
+        "type_info": "Int4"
       },
       {
         "ordinal": 3,

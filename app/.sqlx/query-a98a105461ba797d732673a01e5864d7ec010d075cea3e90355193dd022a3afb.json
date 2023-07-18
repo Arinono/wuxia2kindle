@@ -26,14 +26,14 @@
       {
         "ordinal": 4,
         "name": "number_in_book",
-        "type_info": "Int2"
+        "type_info": "Int4"
       }
     ],
     "parameters": {
       "Left": [
         "Int4",
-        "Int2",
-        "Int2"
+        "Int4",
+        "Int4"
       ]
     },
     "nullable": [

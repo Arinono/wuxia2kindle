@@ -71,7 +71,7 @@ struct AddChapter {
     book: String,
     name: String,
     content: String,
-    number_in_book: i16,
+    number_in_book: i32,
     author: Option<String>,
     translator: Option<String>,
 }

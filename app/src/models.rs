@@ -6,7 +6,7 @@ use std::fmt::Display;
 pub struct Book {
     pub id: i32,
     pub name: String,
-    pub chapter_count: Option<i16>,
+    pub chapter_count: Option<i32>,
     pub author: Option<String>,
     pub translator: Option<String>,
     pub cover: Option<String>,
@@ -18,7 +18,7 @@ pub struct Chapter {
     pub book_id: i32,
     pub name: String,
     pub content: String,
-    pub number_in_book: i16,
+    pub number_in_book: i32,
 }
 
 impl Display for Chapter {
@@ -37,7 +37,7 @@ pub enum ExportKinds {
     FullBook(i32),
     SingleChapter(i32),
     // will error if there is a blank spot in the range
-    ChaptersRange { book_id: i32, chapters: (i16, i16) },
+    ChaptersRange { book_id: i32, chapters: (i32, i32) },
 }
 
 impl From<JsonValue> for ExportKinds {

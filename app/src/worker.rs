@@ -1,5 +1,9 @@
 use std::time::Duration;
 
+use lettre::{
+    message::{header::ContentType, Attachment},
+    Message, SmtpTransport, Transport,
+};
 use sqlx::PgPool;
 use tokio::time::interval;
 
@@ -10,19 +14,17 @@ use crate::{
 };
 
 #[tokio::main]
-pub async fn start(database_url: String) {
+pub async fn start(database_url: String, mailer: SmtpTransport, user: String, send_to: String) {
     let mut interval = interval(Duration::from_secs(60));
 
     loop {
         interval.tick().await;
         let pool = pool::mk_pool(database_url.clone()).await;
-        tokio::spawn(async move {
-            export(pool).await.close().await;
-        });
+        export(pool, &mailer, &user, &send_to).await.close().await;
     }
 }
 
-async fn export(pool: PgPool) -> PgPool {
+async fn export(pool: PgPool, mailer: &SmtpTransport, user: &String, send_to: &String) -> PgPool {
     let exports: Vec<Export> = {
         sqlx::query_as!(
             Export,
@@ -32,6 +34,7 @@ async fn export(pool: PgPool) -> PgPool {
         .await
         .unwrap()
     };
+    println!("Processing {} exports", exports.len());
 
     for export in exports.into_iter() {
         sqlx::query!(
@@ -44,28 +47,60 @@ async fn export(pool: PgPool) -> PgPool {
         .await
         .unwrap();
 
-        if let Err(err) = process(export.clone(), &pool).await {
-            sqlx::query!(
-                "UPDATE exports 
-                SET processed_at = CURRENT_TIMESTAMP,
-                    error = $2
-                WHERE id = $1",
-                export.id,
-                err,
-            )
-            .execute(&pool)
-            .await
-            .unwrap();
-        } else {
-            sqlx::query!(
-                "UPDATE exports 
-                SET processed_at = CURRENT_TIMESTAMP
-                WHERE id = $1",
-                export.id,
-            )
-            .execute(&pool)
-            .await
-            .unwrap();
+        match process(export.clone(), &pool).await {
+            Err(err) => {
+                sqlx::query!(
+                    "UPDATE exports 
+                    SET processed_at = CURRENT_TIMESTAMP,
+                        error = $2
+                    WHERE id = $1",
+                    export.id,
+                    err,
+                )
+                .execute(&pool)
+                .await
+                .unwrap();
+            }
+            Ok(path) => {
+                sqlx::query!(
+                    "UPDATE exports 
+                    SET processed_at = CURRENT_TIMESTAMP
+                    WHERE id = $1",
+                    export.id,
+                )
+                .execute(&pool)
+                .await
+                .unwrap();
+
+                let from = format!("Wuxia2Kindle <{}>", user);
+                let filebody = std::fs::read(&path).unwrap();
+                let content_type = ContentType::parse("application/epub+zip").unwrap();
+                let attachement =
+                    Attachment::new("book.epub".to_owned()).body(filebody, content_type);
+                let email = Message::builder()
+                    .from(from.parse().unwrap())
+                    .reply_to(from.parse().unwrap())
+                    .to(format!("Kindle <{}>", send_to).parse().unwrap())
+                    .singlepart(attachement)
+                    .unwrap();
+
+                println!("Sending email");
+                match &mailer.send(&email) {
+                    Ok(_) => {
+                        println!("Sent {path}");
+                        sqlx::query!(
+                            "UPDATE exports 
+                            SET sent = true
+                            WHERE id = $1",
+                            export.id,
+                        )
+                        .execute(&pool)
+                        .await
+                        .unwrap();
+                    }
+                    Err(e) => panic!("could not send email: {:?}", e),
+                }
+            }
         }
     }
 
