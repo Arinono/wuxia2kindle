@@ -5,14 +5,14 @@ them for convenient and offline reading.
 
 The main issue I had with Wuxia it that I can only read on the web or with the iOS app.
 The iOS app is great, but I want to use the kindle as it's the perfect size between my
-iPhone and iPadPro. Plus the e-ink screen is much better.
+iPhone and iPad Pro. Plus the e-ink screen is much better.
 
-So this is how I came to start this small project.
+So this is how I started this small project.
 
 ## notes
 
 For now, it's 'Wuxia' to 'Kindle' because this is the only usecase I have. It's not impossible that
-I extend to features and integrations in the future.
+I extend the features and integrations in the future.
 
 ## structure
 
