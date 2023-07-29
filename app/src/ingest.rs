@@ -4,7 +4,7 @@ use crate::{
 };
 use axum::{
     error_handling::HandleErrorLayer,
-    extract::State,
+    extract::{State, Path},
     http::{HeaderValue, StatusCode},
     response::IntoResponse,
     routing::{get, post},
@@ -35,6 +35,7 @@ pub async fn start(port: u16, database_url: String) {
         .route("/health", get(health))
         .route("/chapter", post(add_chapter))
         .route("/books", get(get_books))
+        .route("/book/:id", get(get_book))
         .route("/export", post(add_to_queue))
         .layer(
             CorsLayer::new()
@@ -105,6 +106,7 @@ enum ApiRequest {
     AddChapter(AddChapter),
     AddToQueue(AddToQueue),
     GetBooks,
+    GetBook(i32),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -112,6 +114,7 @@ enum ApiResponse {
     AddChapter { success: bool },
     AddToQueue { success: bool },
     GetBooks { data: Vec<Book> },
+    GetBook { data: Option<Book> },
 }
 
 #[axum::debug_handler]
@@ -122,14 +125,10 @@ async fn add_chapter(
     println!("Received chapter: {input}");
 
     let book: Option<Book> = {
-        sqlx::query_as!(
-            Book,
-            "SELECT * FROM books b WHERE b.name = $1",
-            input.book,
-        )
-        .fetch_optional(&pool)
-        .await
-        .unwrap()
+        sqlx::query_as!(Book, "SELECT * FROM books b WHERE b.name = $1", input.book,)
+            .fetch_optional(&pool)
+            .await
+            .unwrap()
     };
 
     match book {
@@ -207,21 +206,22 @@ async fn add_to_queue(
     )
 }
 
-async fn get_books(
-    State(pool): State<PgPool>,
-) -> impl IntoResponse {
-    let books = sqlx::query_as!(
-        Book,
-        "SELECT * from books",
-    )
-    .fetch_all(&pool)
-    .await
-    .unwrap();
+async fn get_books(State(pool): State<PgPool>) -> impl IntoResponse {
+    let books = sqlx::query_as!(Book, "SELECT * FROM books",)
+        .fetch_all(&pool)
+        .await
+        .unwrap();
 
-    (
-        StatusCode::OK,
-        Json(ApiResponse::GetBooks { data: books }),
-    )
+    (StatusCode::OK, Json(ApiResponse::GetBooks { data: books }))
+}
+
+async fn get_book(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl IntoResponse {
+    let book = sqlx::query_as!(Book, "SELECT * FROM books where id = $1", id)
+        .fetch_optional(&pool)
+        .await
+        .unwrap();
+
+    (StatusCode::OK, Json(ApiResponse::GetBook { data: book }))
 }
 
 async fn health() -> &'static str {
