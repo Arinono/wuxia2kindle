@@ -12,7 +12,7 @@ pub struct Book {
     pub cover: Option<String>,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Chapter {
     pub id: i32,
     pub book_id: i32,

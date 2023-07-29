@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM books",
+  "query": "SELECT * FROM books ORDER BY name",
   "describe": {
     "columns": [
       {
@@ -46,5 +46,5 @@
       true
     ]
   },
-  "hash": "464725c9f9aba7653ddefb5281ec5ecacfab9b0d109c71e80ed731f96eab9370"
+  "hash": "be5cf36c9e08d98e294eb5535606675380426d87e9f2e80ba56998f1e3c9984d"
 }

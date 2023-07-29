@@ -1,5 +1,5 @@
 use crate::{
-    models::{Book, ExportKinds},
+    models::{Book, ExportKinds, Chapter},
     pool,
 };
 use axum::{
@@ -36,6 +36,7 @@ pub async fn start(port: u16, database_url: String) {
         .route("/chapter", post(add_chapter))
         .route("/books", get(get_books))
         .route("/book/:id", get(get_book))
+        .route("/book/:id/chapters", get(get_chapters))
         .route("/export", post(add_to_queue))
         .layer(
             CorsLayer::new()
@@ -106,7 +107,6 @@ enum ApiRequest {
     AddChapter(AddChapter),
     AddToQueue(AddToQueue),
     GetBooks,
-    GetBook(i32),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -114,6 +114,7 @@ enum ApiResponse {
     AddChapter { success: bool },
     AddToQueue { success: bool },
     GetBooks { data: Vec<Book> },
+    GetChapters { data: Vec<Chapter> },
     GetBook { data: Option<Book> },
 }
 
@@ -207,12 +208,21 @@ async fn add_to_queue(
 }
 
 async fn get_books(State(pool): State<PgPool>) -> impl IntoResponse {
-    let books = sqlx::query_as!(Book, "SELECT * FROM books",)
+    let books = sqlx::query_as!(Book, "SELECT * FROM books ORDER BY name",)
         .fetch_all(&pool)
         .await
         .unwrap();
 
     (StatusCode::OK, Json(ApiResponse::GetBooks { data: books }))
+}
+
+async fn get_chapters(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl IntoResponse {
+    let chapters = sqlx::query_as!(Chapter, "SELECT * FROM chapters WHERE book_id = $1 ORDER BY number_in_book ASC", id)
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+
+    (StatusCode::OK, Json(ApiResponse::GetChapters { data: chapters }))
 }
 
 async fn get_book(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl IntoResponse {
