@@ -6,6 +6,12 @@ export default {
   theme: {
     colors,
     extend: {
+      width: {
+        76: '19rem',
+      },
+      height: {
+        76: '19rem',
+      },
     },
   },
 } as Options;

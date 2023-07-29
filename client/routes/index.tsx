@@ -1,6 +1,6 @@
 import { Head } from '$fresh/runtime.ts';
 import { Handlers, PageProps } from '$fresh/server.ts';
-import { BookCard } from '../components/BookCard.tsx';
+import BookCard from '../islands/BookCard.tsx';
 import { Book } from '../models/book.ts';
 
 type Response = {
@@ -36,15 +36,13 @@ export default function Home({ data }: PageProps<Array<Book> | null>) {
       <Head>
         <title>Wuxia 2 Kindle</title>
       </Head>
-      <div>
-        <ul class='flex flex-wrap justify-between'>
-          {data.map((b) => (
-            <li class='mb-4'>
-              <BookCard book={b} />
-            </li>
-          ))}
-        </ul>
-      </div>
+      <ul class='grid grid-cols-5 gap-x-4 gap-y-20'>
+        {data.map((b) => (
+          <li class='h-76'>
+            <BookCard book={b} />
+          </li>
+        ))}
+      </ul>
     </>
   );
 }
