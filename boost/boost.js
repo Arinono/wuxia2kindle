@@ -46,7 +46,7 @@ function base() {
 async function onClick() {
   const dataContainer = document.querySelector(`[${METADATA_ATTR}]`)
   const metadata = safeParse(dataContainer.getAttribute(METADATA_ATTR))
-  if (!safeParse) {
+  if (!metadata) {
     return
   }
 
