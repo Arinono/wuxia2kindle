@@ -49,10 +49,7 @@ fn main() {
 
             let f_port = match env_port {
                 Ok(p) => p.parse::<u16>().unwrap(),
-                Err(_) => match port {
-                    Some(p) => p,
-                    None => 3000u16,
-                },
+                Err(_) => port.unwrap_or(3000u16),
             };
 
             let db_url = match env_db_url {
@@ -97,14 +94,8 @@ fn main() {
             };
 
             let port = match env_smtp_port {
-                Ok(p) => match p.parse::<u16>() {
-                    Ok(p) => p,
-                    Err(_) => 25u16,
-                },
-                Err(_) => match smtp_port {
-                    Some(s) => s,
-                    None => 25u16,
-                },
+                Ok(p) => p.parse::<u16>().unwrap_or(25u16),
+                Err(_) => smtp_port.unwrap_or(25u16),
             };
 
             let user = match env_smtp_user {

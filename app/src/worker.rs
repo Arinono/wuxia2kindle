@@ -160,7 +160,7 @@ async fn process(export: Export, pool: &PgPool) -> Result<String, String> {
                 return Ok(filepath);
             }
 
-            return Err("book not found ?".to_owned());
+            Err("book not found ?".to_owned())
         }
         _ => todo!(),
     }

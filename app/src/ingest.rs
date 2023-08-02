@@ -147,7 +147,7 @@ async fn add_chapter(
         }
         Some(book) => {
             println!("Inserting new chapter: {}", input);
-            if let Ok(_) = sqlx::query!(
+            if (sqlx::query!(
                 "INSERT INTO chapters (
                     book_id,
                     name,
@@ -160,7 +160,7 @@ async fn add_chapter(
                 input.number_in_book,
             )
             .execute(&pool)
-            .await
+            .await).is_ok()
             {
                 let count = match book.chapter_count {
                     None => 1,

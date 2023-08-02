@@ -42,7 +42,7 @@ impl Epub {
                 .add_content(
                     EpubContent::new(
                         "cover.xhtml",
-                        wrap_html(format!(r#"<img src="cover.png" />"#)).as_bytes(),
+                        wrap_html(r#"<img src="cover.png" />"#.to_string()).as_bytes(),
                     )
                     .title("Cover")
                     .reftype(ReferenceType::Cover),
