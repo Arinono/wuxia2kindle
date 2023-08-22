@@ -1,7 +1,7 @@
 const API = "http://localhost:3000/chapter"
 const METADATA_ATTR = "data-amplitude-params"
 // https://www.wuxiaworld.com/novel/rmjiir/rmjiir-chapter-20
-const TO = null //'tnc-chapter-20'
+const TO = null // 'og-chapter-1480'
 
 const btn = document.createElement("div")
 btn.classList.add("wuxia2kindle-btn")
@@ -46,7 +46,7 @@ function base() {
 async function onClick() {
   const dataContainer = document.querySelector(`[${METADATA_ATTR}]`)
   const metadata = safeParse(dataContainer.getAttribute(METADATA_ATTR))
-  if (!metadata) {
+  if (!safeParse) {
     return
   }
 
@@ -64,11 +64,11 @@ async function onClick() {
   send(chapter)
     .then(green)
     .catch(red)
-    .finally(async () => {
-      await sleep(0.5)
+    .finally(async() => {
+      await sleep(.5)
       base()
     })
-  
+
   if (TO !== null) {
     const url = location.href.split('/')
     const chap = url.splice(-1)[0]

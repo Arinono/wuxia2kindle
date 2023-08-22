@@ -1,5 +1,6 @@
 import { Handlers, PageProps } from '$fresh/server.ts';
-import { Book, Chapter } from '../../models/index.ts';
+import TBook from '../../islands/book/Book.tsx';
+import { type Book, type Chapter } from '../../models/index.ts';
 
 type GetBookResponse = {
   GetBook: {
@@ -67,35 +68,10 @@ export default function Book({ data }: PageProps<Data | null>) {
     return <div>Book not found 🥲</div>;
   }
 
-  const { book, chapters } = data;
-  const cover = `data:image/png;base64,${book.cover}`;
-
   return (
-    <div class='ml-4'>
-      <div class="flex flex-row no-wrap h-76">
-        <img
-          src={cover}
-          alt={`${book.name} cover`}
-        />
-        <div class="ml-8">
-          <h1 class='text-6xl'>{book.name}</h1>
-          <div class='mt-4'>
-            <h3>
-              <strong>Written by</strong>: {book.author}
-            </h3>
-            <h3>
-              <strong>Translated by</strong>: {book.translator}
-            </h3>
-          </div>
-        </div>
-      </div>
-
-      <h2 class='text-5xl mt-8 mb-4'>Chapters <span class="text-3xl">({ book.chapter_count })</span></h2>
-      <ul>
-        {chapters.map((c) => (
-          <li>{c.name}</li>
-        ))}
-      </ul>
-    </div>
+    <TBook
+      book={data.book}
+      chapters={data.chapters}
+    />
   );
 }

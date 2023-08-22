@@ -8,6 +8,7 @@ export default {
     extend: {
       width: {
         76: '19rem',
+        'fit-content': 'fit-content',
       },
       height: {
         76: '19rem',

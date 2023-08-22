@@ -1,6 +1,6 @@
 import { Head } from '$fresh/runtime.ts';
 import { Handlers, PageProps } from '$fresh/server.ts';
-import BookCard from '../islands/BookCard.tsx';
+import BookCard from '../islands/book/BookCard.tsx';
 import { Book } from '../models/book.ts';
 
 type Response = {

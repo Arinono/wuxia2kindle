@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM books where id = $1",
+  "query": "SELECT * FROM books WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -48,5 +48,5 @@
       true
     ]
   },
-  "hash": "49195cd1949b2d6454cd1c708728f24402dbf5f32329d446b88663e7fe0021ae"
+  "hash": "022dda1d125f83411b83482f17361f7c6eb4f15240b312758cd7060c26c2fe74"
 }

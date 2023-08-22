@@ -33,21 +33,26 @@ impl Epub {
             builder.metadata("author", translator).unwrap();
         }
         if let Some(cover) = &self.cover {
-            let bin = general_purpose::STANDARD.decode(cover).unwrap();
-            builder
-                // book cover for file system
-                .add_cover_image("cover.png", bin.as_slice(), "image/png")
-                .unwrap()
-                // actual cover when opening the epub
-                .add_content(
-                    EpubContent::new(
-                        "cover.xhtml",
-                        wrap_html(r#"<img src="cover.png" />"#.to_string()).as_bytes(),
-                    )
-                    .title("Cover")
-                    .reftype(ReferenceType::Cover),
-                )
-                .unwrap();
+            if let Some((mime, rhs)) = cover.split_once(";base64,") {
+                // data:image/png
+                if let Some((_, mime_type)) = mime.split_once(":") {
+                    let bin = general_purpose::STANDARD.decode(rhs).unwrap();
+                    builder
+                        // book cover for file system
+                        .add_cover_image("cover.png", bin.as_slice(), mime_type)
+                        .unwrap()
+                        // actual cover when opening the epub
+                        .add_content(
+                            EpubContent::new(
+                                "cover.xhtml",
+                                wrap_html(r#"<img src="cover.png" />"#.to_string()).as_bytes(),
+                            )
+                            .title("Cover")
+                            .reftype(ReferenceType::Cover),
+                        )
+                        .unwrap();
+                }
+            }
         }
 
         builder

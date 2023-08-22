@@ -1,11 +1,11 @@
 use crate::{
-    models::{Book, ExportKinds, Chapter},
+    models::{Book, Chapter, ExportKinds},
     pool,
 };
 use axum::{
     error_handling::HandleErrorLayer,
-    extract::{State, Path},
-    http::{HeaderValue, StatusCode},
+    extract::{Path, State, DefaultBodyLimit},
+    http::{HeaderValue, Method, StatusCode},
     response::IntoResponse,
     routing::{get, post},
     Json, Router,
@@ -35,12 +35,13 @@ pub async fn start(port: u16, database_url: String) {
         .route("/health", get(health))
         .route("/chapter", post(add_chapter))
         .route("/books", get(get_books))
-        .route("/book/:id", get(get_book))
+        .route("/book/:id", get(get_book).patch(update_book))
         .route("/book/:id/chapters", get(get_chapters))
         .route("/export", post(add_to_queue))
         .layer(
             CorsLayer::new()
                 .allow_origin("*".parse::<HeaderValue>().unwrap())
+                .allow_methods([Method::GET, Method::POST, Method::PATCH])
                 .allow_headers(Any),
         )
         .layer(
@@ -59,6 +60,7 @@ pub async fn start(port: u16, database_url: String) {
                 .layer(TraceLayer::new_for_http())
                 .into_inner(),
         )
+        .layer(DefaultBodyLimit::max(5_242_880))
         .with_state(pool);
 
     tracing::debug!("Listening on 0.0.0.0:{port}");
@@ -89,6 +91,12 @@ struct AddToQueue {
     kind: ExportKinds,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+struct UpdateBook {
+    pub name: Option<String>,
+    pub cover: Option<String>,
+}
+
 impl Display for ExportKinds {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -107,6 +115,7 @@ enum ApiRequest {
     AddChapter(AddChapter),
     AddToQueue(AddToQueue),
     GetBooks,
+    UpdateBook(UpdateBook),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -160,7 +169,8 @@ async fn add_chapter(
                 input.number_in_book,
             )
             .execute(&pool)
-            .await).is_ok()
+            .await)
+                .is_ok()
             {
                 let count = match book.chapter_count {
                     None => 1,
@@ -217,21 +227,67 @@ async fn get_books(State(pool): State<PgPool>) -> impl IntoResponse {
 }
 
 async fn get_chapters(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl IntoResponse {
-    let chapters = sqlx::query_as!(Chapter, "SELECT * FROM chapters WHERE book_id = $1 ORDER BY number_in_book ASC", id)
-        .fetch_all(&pool)
-        .await
-        .unwrap();
+    let chapters = sqlx::query_as!(
+        Chapter,
+        "SELECT * FROM chapters WHERE book_id = $1 ORDER BY number_in_book ASC",
+        id
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
 
-    (StatusCode::OK, Json(ApiResponse::GetChapters { data: chapters }))
+    (
+        StatusCode::OK,
+        Json(ApiResponse::GetChapters { data: chapters }),
+    )
 }
 
 async fn get_book(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl IntoResponse {
-    let book = sqlx::query_as!(Book, "SELECT * FROM books where id = $1", id)
+    let book = sqlx::query_as!(Book, "SELECT * FROM books WHERE id = $1", id)
         .fetch_optional(&pool)
         .await
         .unwrap();
 
     (StatusCode::OK, Json(ApiResponse::GetBook { data: book }))
+}
+
+async fn update_book(
+    State(pool): State<PgPool>,
+    Path(id): Path<i32>,
+    Json(input): Json<UpdateBook>,
+) -> impl IntoResponse {
+    if let Ok(o_book) = sqlx::query_as!(Book, "SELECT * FROM books WHERE id = $1", id)
+        .fetch_optional(&pool)
+        .await
+    {
+        if let Some(mut book) = o_book {
+            if let Some(name) = input.name {
+                book.name = name;
+            }
+
+            if let Some(cover) = input.cover {
+                book.cover = Some(cover);
+            }
+
+            let res = sqlx::query!(
+                "UPDATE books SET name = $2, cover = $3 WHERE id = $1",
+                id,
+                book.name,
+                book.cover
+            )
+            .execute(&pool)
+            .await;
+
+            if let Err(e) = res {
+                println!("Error updating book: {e}");
+                return (StatusCode::INTERNAL_SERVER_ERROR, ());
+            }
+
+            return (StatusCode::ACCEPTED, ());
+        }
+    }
+
+    (StatusCode::NOT_FOUND, ())
 }
 
 async fn health() -> &'static str {
