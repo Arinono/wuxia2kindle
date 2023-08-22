@@ -1,6 +1,7 @@
 import { Book } from '../../models/book.ts';
 import { Chapter } from '../../models/chapter.ts';
 import { signal } from '@preact/signals';
+import { useState } from 'preact/hooks';
 import BookCover from './BookCover.tsx';
 
 type Props = {
@@ -32,6 +33,7 @@ export default function Book({ book, chapters }: Props) {
   revChapters.reverse();
 
   const cover = signal(book.cover ?? null);
+  const [asc, setAsc] = useState(false);
 
   cover.subscribe((val) => {
     if (val && val !== book.cover && typeof apiUrl === 'string') {
@@ -41,7 +43,7 @@ export default function Book({ book, chapters }: Props) {
   });
 
   return (
-    <div class='ml-4'>
+    <>
       <div class='flex flex-row no-wrap'>
         <div
           class='h-76'
@@ -65,16 +67,26 @@ export default function Book({ book, chapters }: Props) {
         </div>
       </div>
 
-      <h2 class='text-5xl mt-8 mb-4'>
-        Chapters <span class='text-3xl'>({book.chapter_count})</span>
-      </h2>
-      <ul class='h-64 overflow-y-scroll'>
-        {revChapters.map((c) => (
+      <div class='flex flex-row items-center'>
+        <h2 class='text-5xl mt-8 mb-4 mr-8'>
+          Chapters <span class='text-3xl'>({book.chapter_count})</span>
+        </h2>
+        <div
+          class='text-4xl mt-6 cursor-pointer'
+          onClick={() => {
+            setAsc(!asc);
+          }}
+        >
+          {asc ? '⬇️ ' : '⬆️'}
+        </div>
+      </div>
+      <ul class='overflow-y-auto grid grid-cols-2'>
+        {(asc ? chapters : revChapters).map((c) => (
           <li>
-            {c.id} - {c.name}
+            <strong>({c.number_in_book})</strong> {c.name}
           </li>
         ))}
       </ul>
-    </div>
+    </>
   );
 }
