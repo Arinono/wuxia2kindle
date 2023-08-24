@@ -94,7 +94,9 @@ export default function Book({ book, chapters }: Props) {
       <ul class='overflow-y-auto grid grid-cols-2'>
         {(asc ? chapters : revChapters).map((c) => (
           <li>
-            <strong>({c.number_in_book})</strong> {c.name}
+            <a href={`/chapter/${c.id}`}>
+              <strong>({c.number_in_book})</strong> {c.name}
+            </a>
           </li>
         ))}
       </ul>

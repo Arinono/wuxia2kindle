@@ -4,7 +4,7 @@ use crate::{
 };
 use axum::{
     error_handling::HandleErrorLayer,
-    extract::{Path, State, DefaultBodyLimit},
+    extract::{DefaultBodyLimit, Path, State},
     http::{HeaderValue, Method, StatusCode},
     response::IntoResponse,
     routing::{get, post},
@@ -34,6 +34,7 @@ pub async fn start(port: u16, database_url: String) {
     let app = Router::new()
         .route("/health", get(health))
         .route("/chapter", post(add_chapter))
+        .route("/chapter/:id", get(get_chapter))
         .route("/books", get(get_books))
         .route("/book/:id", get(get_book).patch(update_book))
         .route("/book/:id/chapters", get(get_chapters))
@@ -125,6 +126,7 @@ enum ApiResponse {
     GetBooks { data: Vec<Book> },
     GetChapters { data: Vec<Chapter> },
     GetBook { data: Option<Book> },
+    GetChapter { data: Option<Chapter> },
 }
 
 #[axum::debug_handler]
@@ -239,6 +241,18 @@ async fn get_chapters(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl I
     (
         StatusCode::OK,
         Json(ApiResponse::GetChapters { data: chapters }),
+    )
+}
+
+async fn get_chapter(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl IntoResponse {
+    let chapter = sqlx::query_as!(Chapter, "SELECT * FROM chapters WHERE id = $1", id)
+        .fetch_optional(&pool)
+        .await
+        .unwrap();
+
+    (
+        StatusCode::OK,
+        Json(ApiResponse::GetChapter { data: chapter }),
     )
 }
 
