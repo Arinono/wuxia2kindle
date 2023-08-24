@@ -46,7 +46,7 @@ export default function CoverUpload(props: Props) {
   return (
     <div class='w-4 h-4'>
       <button
-        class='cursor-pointer focus:outline-none'
+        class='cursor-pointer focus:outline-none select-none'
         onClick={onClickHandler}
       >
         🖼️

@@ -3,6 +3,7 @@ import { Chapter } from '../../models/chapter.ts';
 import { signal } from '@preact/signals';
 import { useState } from 'preact/hooks';
 import BookCover from './BookCover.tsx';
+import Export from './Export.tsx';
 
 type Props = {
   book: Book;
@@ -54,16 +55,26 @@ export default function Book({ book, chapters }: Props) {
             cover={cover}
           />
         </div>
-        <div class='ml-8'>
-          <h1 class='text-6xl'>{book.name}</h1>
-          <div class='mt-4'>
-            <h3>
-              <strong>Written by</strong>: {book.author}
-            </h3>
-            <h3>
-              <strong>Translated by</strong>: {book.translator}
-            </h3>
+        <div class='flex flex-col justify-between ml-8'>
+          <div>
+            <h1 class='text-6xl'>{book.name}</h1>
+            <div class='mt-4'>
+              <h3>
+                <strong>Written by</strong>: {book.author}
+              </h3>
+              <h3>
+                <strong>Translated by</strong>: {book.translator}
+              </h3>
+            </div>
           </div>
+          {chapters.length > 1 && (
+            <Export
+              name={book.name}
+              book_id={book.id}
+              chapters={chapters}
+              apiUrl={apiUrl ?? null}
+            />
+          )}
         </div>
       </div>
 
@@ -72,7 +83,7 @@ export default function Book({ book, chapters }: Props) {
           Chapters <span class='text-3xl'>({book.chapter_count})</span>
         </h2>
         <div
-          class='text-4xl mt-6 cursor-pointer'
+          class='text-4xl mt-6 cursor-pointer select-none'
           onClick={() => {
             setAsc(!asc);
           }}

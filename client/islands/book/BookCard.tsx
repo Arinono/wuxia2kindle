@@ -39,7 +39,7 @@ export default function BookCard({ book }: Props) {
             }`}
           >
             <div
-              class='mx-4 mt-2 cursor-pointer text-xl'
+              class='mx-4 mt-2 cursor-pointer text-xl select-none'
               onClick={toggle}
             >
               {!open.value ? 'ℹ' : '╳'}
@@ -65,7 +65,7 @@ export default function BookCard({ book }: Props) {
             relative cursor-pointer'
             onClick={goToBook}
           >
-            <div class='opacity-0 group-hover:opacity-100'>
+            <div class='opacity-0 group-hover:opacity-100 select-none'>
               <h2>{name}</h2>
             </div>
           </div>
