@@ -11,3 +11,6 @@ devenv.local.nix
 
 target
 *.epub
+
+bak.sql
+result
