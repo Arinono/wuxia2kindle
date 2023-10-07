@@ -29,10 +29,20 @@
           rustToolchain = pkgs.pkgsBuildHost.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
           craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
           sqlxFilter = path: _type: builtins.match ".*json$" path != null;
+          sqlSchemaFilter = path: _type: builtins.match "^schema.sql$" path != null;
+          sqlFilter = path: _type: builtins.match ".*sql$" path != null;
           filterOrCargo = path: type: (sqlxFilter path type) || (craneLib.filterCargoSources path type);
           src = pkgs.lib.cleanSourceWith {
             src = ./.;
             filter = filterOrCargo;
+          };
+          sqlSchema = pkgs.lib.cleanSourceWith {
+            src = ./.;
+            filter = sqlSchemaFilter;
+          };
+          sqlMigrations = pkgs.lib.cleanSourceWith {
+            src = ./migrations;
+            filter = sqlFilter;
           };
           darwinNativeBuildInputs = with pkgs; [ rustToolchain pkg-config darwin.apple_sdk.frameworks.SystemConfiguration ];
           otherNativeBuildInputs = with pkgs; [ rustToolchain pkg-config ];
@@ -45,10 +55,10 @@
           bin = craneLib.buildPackage (commonArgs // {
             inherit cargoArtifacts;
           });
-          dockerImage = pkgs.dockerTools.buildImage {
-            name = "arinono/wuxia2kindle_app";
+          dockerImage = pkgs.dockerTools.buildLayeredImage {
+            name = "arinono/wuxia2kindle";
             tag = "latest";
-            copyToRoot = [ bin ];
+            contents = [ bin ];
             config = {
               Cmd = [ "${bin}/bin/wuxia2kindle" ];
             };
@@ -63,6 +73,7 @@
             };
           devShells.default = mkShell {
             inputsFrom = [ bin ];
+            buildInputs = with pkgs; [ dive ];
           };
         }
       );
