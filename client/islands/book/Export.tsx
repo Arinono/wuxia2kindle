@@ -20,6 +20,7 @@ async function addToQueue(
     method: 'POST',
     headers: {
       'content-type': 'application/json',
+      authorization: `Basic ${Deno.env.get('API_TOKEN')}`,
     },
     body: JSON.stringify({
       kind: {

@@ -15,7 +15,7 @@ export const handler: Handlers<Array<Book> | null> = {
       method: 'GET',
       headers: {
         'content-type': 'application/json',
-	'authorization': `Basic ${Deno.env.get('API_TOKEN')}`,
+        authorization: `Basic ${Deno.env.get('API_TOKEN')}`,
       },
     });
     if (resp.status !== 200) {

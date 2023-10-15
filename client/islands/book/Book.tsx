@@ -19,6 +19,7 @@ async function updateCover(
     method: 'PATCH',
     headers: {
       'content-type': 'application/json',
+      authorization: `Basic ${Deno.env.get('API_TOKEN')}`,
     },
     body: JSON.stringify({ cover }),
   });

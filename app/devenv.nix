@@ -10,7 +10,6 @@
     initialDatabases = [
       {
         name = "wuxia2kindle";
-        schema = ./schema.sql;
       }
     ];
   };

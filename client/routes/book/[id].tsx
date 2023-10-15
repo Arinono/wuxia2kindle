@@ -26,7 +26,7 @@ export const handler: Handlers<Data | null> = {
       method: 'GET',
       headers: {
         'content-type': 'application/json',
-	'authorization': `Basic ${Deno.env.get('API_TOKEN')}`,
+        authorization: `Basic ${Deno.env.get('API_TOKEN')}`,
       },
     });
     if (get_book.status !== 200) {
@@ -48,7 +48,7 @@ export const handler: Handlers<Data | null> = {
         method: 'GET',
         headers: {
           'content-type': 'application/json',
-	  'authorization': `Basic ${Deno.env.get('API_TOKEN')}`,
+          authorization: `Basic ${Deno.env.get('API_TOKEN')}`,
         },
       },
     );
