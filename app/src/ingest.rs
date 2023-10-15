@@ -42,7 +42,7 @@ pub async fn start(port: u16, database_url: String) {
         .layer(
             CorsLayer::new()
                 .allow_origin("*".parse::<HeaderValue>().unwrap())
-                .allow_methods([Method::GET, Method::POST, Method::PATCH])
+                .allow_methods([Method::GET, Method::POST, Method::OPTIONS, Method::PATCH])
                 .allow_headers(Any),
         )
         .layer(

@@ -5,8 +5,9 @@ export default function App({ Component }: AppProps) {
   return (
     <>
       <div
-        id='api_url'
+        id='api'
         data-url={Deno.env.get('API_URL')}
+        data-token={Deno.env.get('API_TOKEN')}
       />
       <div class='text-gray-200'>
         <TopBar />

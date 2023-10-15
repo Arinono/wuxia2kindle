@@ -1,7 +1,8 @@
 const API = "http://localhost:3000/chapter"
+const AUTH = "Basic ******"
 const METADATA_ATTR = "data-amplitude-params"
 // https://www.wuxiaworld.com/novel/rmjiir/rmjiir-chapter-20
-const TO = null // 'og-chapter-1480'
+const TO = null // 'dr-chapter-293'
 
 const btn = document.createElement("div")
 btn.classList.add("wuxia2kindle-btn")
@@ -44,6 +45,9 @@ function base() {
 }
 
 async function onClick() {
+  if (TO !== null) {
+    await sleep(3)
+  }
   const dataContainer = document.querySelector(`[${METADATA_ATTR}]`)
   const metadata = safeParse(dataContainer.getAttribute(METADATA_ATTR))
   if (!safeParse) {
@@ -87,6 +91,7 @@ function send(chapter) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": AUTH,
         },
         body: JSON.stringify(chapter),
       });

@@ -12,6 +12,7 @@ type Props = {
 
 async function updateCover(
   url: string,
+  token: string,
   id: number,
   cover: string,
 ): Promise<void> {
@@ -19,7 +20,7 @@ async function updateCover(
     method: 'PATCH',
     headers: {
       'content-type': 'application/json',
-      authorization: `Basic ${Deno.env.get('API_TOKEN')}`,
+      authorization: `Basic ${token}`,
     },
     body: JSON.stringify({ cover }),
   });
@@ -29,7 +30,11 @@ export default function Book({ book, chapters }: Props) {
   const apiUrl =
     'Deno' in window && Deno !== undefined
       ? Deno.env.get('API_URL')
-      : document.getElementById('api_url')?.getAttribute('data-url');
+      : document.getElementById('api')?.getAttribute('data-url');
+  const apiToken =
+    'Deno' in window && Deno !== undefined
+      ? Deno.env.get('API_TOKEN')
+      : document.getElementById('api')?.getAttribute('data-token');
 
   const revChapters = Array.from(chapters);
   revChapters.reverse();
@@ -39,7 +44,7 @@ export default function Book({ book, chapters }: Props) {
 
   cover.subscribe((val) => {
     if (val && val !== book.cover && typeof apiUrl === 'string') {
-      updateCover(apiUrl, book.id, val);
+      updateCover(apiUrl, apiToken, book.id, val);
       // snackbar
     }
   });
@@ -74,6 +79,7 @@ export default function Book({ book, chapters }: Props) {
               book_id={book.id}
               chapters={chapters}
               apiUrl={apiUrl ?? null}
+              apiToken={apiToken ?? null}
             />
           )}
         </div>

@@ -12,6 +12,7 @@ type Props = {
 
 async function addToQueue(
   url: string,
+  token: string,
   id: number,
   from: number,
   to: number,
@@ -20,7 +21,7 @@ async function addToQueue(
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      authorization: `Basic ${Deno.env.get('API_TOKEN')}`,
+      authorization: `Basic ${token}`,
     },
     body: JSON.stringify({
       kind: {
