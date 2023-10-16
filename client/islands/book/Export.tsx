@@ -7,6 +7,7 @@ type Props = {
   name: string;
   chapters: Array<Chapter>;
   apiUrl: string | null;
+  apiToken: string | null;
   book_id: number;
 };
 
@@ -45,7 +46,7 @@ async function addToQueue(
   });
 }
 
-export default function Export({ name, book_id, chapters, apiUrl }: Props) {
+export default function Export({ name, book_id, chapters, apiUrl, apiToken }: Props) {
   const dialog = createRef();
   const open = signal(false);
   const [success, setSuccess] = useState<boolean | null>(null);
@@ -81,8 +82,8 @@ export default function Export({ name, book_id, chapters, apiUrl }: Props) {
         open.value = false;
         return;
       }
-      if (typeof apiUrl === 'string') {
-        addToQueue(apiUrl, book_id, parseInt(f_from), parseInt(f_to))
+      if (typeof apiUrl === 'string' && typeof apiToken === 'string') {
+        addToQueue(apiUrl, apiToken, book_id, parseInt(f_from), parseInt(f_to))
           .then((s) => {
             setSuccess(s);
           })
