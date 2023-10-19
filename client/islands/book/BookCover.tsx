@@ -25,7 +25,7 @@ export default function BookCover(props: Props) {
               <img
                 src={props.cover}
                 alt={props.alt}
-                class='h-full w-full object-contain bg-gray-600'
+                class='h-full w-full object-cover bg-gray-600'
               />
             ) : (
               <svg

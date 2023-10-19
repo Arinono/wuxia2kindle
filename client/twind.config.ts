@@ -7,7 +7,7 @@ export default {
     colors,
     extend: {
       width: {
-        76: '19rem',
+        52: '13rem',
         'fit-content': 'fit-content',
       },
       height: {

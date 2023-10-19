@@ -37,9 +37,9 @@ export default function Home({ data }: PageProps<Array<Book> | null>) {
       <Head>
         <title>Wuxia 2 Kindle</title>
       </Head>
-      <ul class='grid grid-cols-5 lg:grid-cols-7 gap-x-4 gap-y-20'>
+      <ul class='grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-7 gap-x-4 gap-y-20'>
         {data.map((b) => (
-          <li class='h-76'>
+          <li class='h-76 w-52'>
             <BookCard book={b} />
           </li>
         ))}
