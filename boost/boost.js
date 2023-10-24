@@ -23,6 +23,8 @@ function sleep(t) {
 
 function getContent() {
   const contents = Array.from(document.querySelectorAll('.chapter-content p'))
+  contents.map(el => el.querySelector('button[type="button"]')?.remove())
+
   const content = contents.map(el => el.innerText).join('<p>')
 
   return content
