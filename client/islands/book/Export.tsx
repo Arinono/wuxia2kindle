@@ -163,6 +163,7 @@ export default function Export({ name, book_id, chapters, apiUrl, apiToken }: Pr
                 name='to'
                 class='ml-4'
                 value={to}
+                onInput={onInputHandler('to')}
               >
                 {revChapters.map((c) => (
                   <option value={c.number_in_book}>{c.name}</option>
