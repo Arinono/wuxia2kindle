@@ -1,3 +1,4 @@
+mod auth;
 mod epub;
 mod ingest;
 mod models;
@@ -17,113 +18,42 @@ struct Cli {
 #[derive(Debug, Subcommand)]
 enum Commands {
     #[command(arg_required_else_help = false)]
-    Ingest {
-        #[arg(short, long)]
-        port: Option<u16>,
-        #[arg(long)]
-        database_url: Option<String>,
-    },
-    Worker {
-        #[arg(long)]
-        database_url: Option<String>,
-        #[arg(long)]
-        smtp_server: Option<String>,
-        #[arg(long)]
-        smtp_port: Option<u16>,
-        #[arg(long)]
-        smtp_user: Option<String>,
-        #[arg(long)]
-        smtp_password: Option<String>,
-        #[arg(long)]
-        send_to: Option<String>,
-    },
+    Ingest,
+    Worker,
 }
 
 fn main() {
     let args = Cli::parse();
 
     match args.command {
-        Commands::Ingest { port, database_url } => {
-            let env_port = std::env::var("PORT");
-            let env_db_url = std::env::var("DATABASE_URL");
+        Commands::Ingest => {
+            std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+            std::env::var("DOMAIN").expect("DOMAIN must be set");
 
-            let f_port = match env_port {
-                Ok(p) => p.parse::<u16>().unwrap(),
-                Err(_) => port.unwrap_or(3000u16),
-            };
+            let env_port = std::env::var("PORT").unwrap_or("3000".to_owned());
+            let env_db_url = std::env::var("DATABASE_URL")
+                .unwrap_or("postgres://localhost:5432/wuxia2kindle".to_owned());
 
-            let db_url = match env_db_url {
-                Ok(u) => u,
-                Err(_) => match database_url {
-                    Some(u) => u,
-                    None => "postgres://localhost:5432/wuxia2kindle".to_owned(),
-                },
-            };
+            let port = env_port.parse::<u16>().expect("PORT must be a number");
 
-            ingest::start(f_port, db_url);
+            ingest::start(port, env_db_url);
         }
-        Commands::Worker {
-            database_url,
-            smtp_server,
-            smtp_user,
-            smtp_password,
-            send_to,
-            smtp_port,
-        } => {
-            let env_db_url = std::env::var("DATABASE_URL");
-            let env_smtp_server = std::env::var("SMTP_SERVER");
-            let env_smtp_port = std::env::var("SMTP_PORT");
-            let env_smtp_user = std::env::var("SMTP_USER");
-            let env_smtp_password = std::env::var("SMTP_PASSWORD");
-            let env_send_to = std::env::var("SEND_TO");
+        Commands::Worker => {
+            let env_db_url = std::env::var("DATABASE_URL")
+                .unwrap_or("postgres://localhost:5432/wuxia2kindle".to_owned());
+            let env_smtp_server = std::env::var("SMTP_SERVER").expect("SMTP_SERVER must be set");
+            let env_smtp_port = std::env::var("SMTP_PORT").expect("SMTP_PORT must be set");
+            let env_smtp_user = std::env::var("SMTP_USER").expect("SMTP_USER must be set");
+            let env_smtp_password =
+                std::env::var("SMTP_PASSWORD").expect("SMTP_PASSWORD must be set");
+            let env_send_to = std::env::var("SEND_TO").expect("SEND_TO must be set");
 
-            let db_url = match env_db_url {
-                Ok(u) => u,
-                Err(_) => match database_url {
-                    Some(u) => u,
-                    None => "postgres://localhost:5432/wuxia2kindle".to_owned(),
-                },
-            };
+            let port = env_smtp_port
+                .parse::<u16>()
+                .expect("SMTP_PORT must be a number");
 
-            let server = match env_smtp_server {
-                Ok(s) => s,
-                Err(_) => match smtp_server {
-                    Some(s) => s,
-                    None => panic!("smtp_server must be set"),
-                },
-            };
-
-            let port = match env_smtp_port {
-                Ok(p) => p.parse::<u16>().unwrap_or(25u16),
-                Err(_) => smtp_port.unwrap_or(25u16),
-            };
-
-            let user = match env_smtp_user {
-                Ok(u) => u,
-                Err(_) => match smtp_user {
-                    Some(u) => u,
-                    None => panic!("smtp_user must be set"),
-                },
-            };
-
-            let password = match env_smtp_password {
-                Ok(p) => p,
-                Err(_) => match smtp_password {
-                    Some(p) => p,
-                    None => panic!("smtp_password must be set"),
-                },
-            };
-
-            let send_to = match env_send_to {
-                Ok(s) => s,
-                Err(_) => match send_to {
-                    Some(s) => s,
-                    None => panic!("send_to must be set"),
-                },
-            };
-
-            let credentials = Credentials::new(user.clone(), password);
-            let mailer = SmtpTransport::starttls_relay(server.as_ref())
+            let credentials = Credentials::new(env_smtp_user.clone(), env_smtp_password);
+            let mailer = SmtpTransport::starttls_relay(&env_smtp_server)
                 .unwrap()
                 .port(port)
                 .credentials(credentials)
@@ -131,7 +61,7 @@ fn main() {
 
             mailer.test_connection().unwrap();
 
-            worker::start(db_url, mailer, user, send_to);
+            worker::start(env_db_url, mailer, env_smtp_user, env_send_to);
         }
     }
 }

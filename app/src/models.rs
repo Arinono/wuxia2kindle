@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
-use sqlx::types::{JsonValue, chrono::{DateTime, Utc}};
+use sqlx::types::{
+    chrono::{DateTime, Utc},
+    JsonValue,
+};
 use std::fmt::Display;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

@@ -1,25 +1,33 @@
 use crate::{
     models::{Book, Chapter, ExportKinds},
-    pool,
+    pool, auth::{login::login, callback::login_callback, cookie::get_cookie},
 };
 use axum::{
+    body::{self, Empty, Full},
     error_handling::HandleErrorLayer,
-    extract::{DefaultBodyLimit, Path, State},
-    http::{HeaderValue, Method, StatusCode},
+    extract::{DefaultBodyLimit, FromRef, Path, State},
+    http::{
+        header::{self},
+        HeaderMap, HeaderValue, Method, Response, StatusCode,
+    },
     response::IntoResponse,
     routing::{get, post},
     Json, Router,
 };
+use include_dir::{include_dir, Dir};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use std::{fmt::Display, time::Duration};
 use tower::{BoxError, ServiceBuilder};
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+static STATIC_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/src/static/src");
+
 #[tokio::main]
 pub async fn start(port: u16, database_url: String) {
+    let domain = std::env::var("DOMAIN").expect("DOMAIN must be set");
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -29,10 +37,15 @@ pub async fn start(port: u16, database_url: String) {
         .init();
 
     let pool = pool::mk_pool(database_url).await;
+    let app_state = AppState { pool };
 
     // build our application with a route
     let app = Router::new()
+        .route("/*path", get(static_path))
+        .route("/", get(index))
         .route("/health", get(health))
+        .route("/auth/:service/login", get(login))
+        .route("/auth/:service/callback", get(login_callback))
         .route("/chapter", post(add_chapter))
         .route("/chapter/:id", get(get_chapter))
         .route("/books", get(get_books))
@@ -41,9 +54,10 @@ pub async fn start(port: u16, database_url: String) {
         .route("/export", post(add_to_queue))
         .layer(
             CorsLayer::new()
-                .allow_origin("*".parse::<HeaderValue>().unwrap())
+                .allow_credentials(true)
+                .allow_origin(domain.parse::<HeaderValue>().unwrap())
                 .allow_methods([Method::GET, Method::POST, Method::OPTIONS, Method::PATCH])
-                .allow_headers(Any),
+                .allow_headers(vec![header::CONTENT_TYPE, header::ACCEPT, header::COOKIE]),
         )
         .layer(
             ServiceBuilder::new()
@@ -62,13 +76,73 @@ pub async fn start(port: u16, database_url: String) {
                 .into_inner(),
         )
         .layer(DefaultBodyLimit::max(5_242_880))
-        .with_state(pool);
+        .with_state(app_state);
 
-    tracing::debug!("Listening on 0.0.0.0:{port}");
+    tracing::debug!("Listening on:\nhttp://localhost:{port}");
     axum::Server::bind(&format!("0.0.0.0:{port}").parse().unwrap())
         .serve(app.into_make_service())
         .await
         .unwrap();
+}
+
+#[derive(Clone)]
+struct AppState {
+    pool: PgPool,
+}
+
+impl FromRef<AppState> for PgPool {
+    fn from_ref(state: &AppState) -> Self {
+        state.pool.clone()
+    }
+}
+
+async fn index(headers: HeaderMap, State(pool): State<PgPool>) -> impl IntoResponse {
+    let user = get_cookie(&headers, &pool).await;
+    println!("User: {:?}", user);
+    if user.is_none() {
+        return Response::builder()
+            .status(StatusCode::UNAUTHORIZED)
+            .header(header::CONTENT_TYPE, HeaderValue::from_static("text/html"))
+            .body(body::boxed(Full::from(
+                STATIC_DIR.get_file("login.html").unwrap().contents(),
+            )))
+            .unwrap();
+    }
+
+    let index = STATIC_DIR
+        .get_file("index.html")
+        .expect("index.html should exist");
+
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, HeaderValue::from_static("text/html"))
+        .body(body::boxed(Full::from(index.contents())))
+        .unwrap()
+}
+
+fn get_file(file: &str) -> impl IntoResponse {
+    let path = file.trim_start_matches('/');
+    let mime_type = mime_guess::from_path(path).first_or_text_plain();
+
+    let file = STATIC_DIR.get_file(path);
+    match file {
+        None => Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .body(body::boxed(Empty::new()))
+            .unwrap(),
+        Some(file) => Response::builder()
+            .status(StatusCode::OK)
+            .header(
+                header::CONTENT_TYPE,
+                HeaderValue::from_str(mime_type.as_ref()).unwrap(),
+            )
+            .body(body::boxed(Full::from(file.contents())))
+            .unwrap(),
+    }
+}
+
+async fn static_path(Path(path): Path<String>) -> impl IntoResponse {
+    get_file(&path)
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -253,22 +327,38 @@ async fn get_chapters(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl I
 async fn get_chapter(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl IntoResponse {
     let chapter = sqlx::query_as!(Chapter, "SELECT * FROM chapters WHERE id = $1", id)
         .fetch_optional(&pool)
-        .await
-        .unwrap();
+        .await;
 
-    (
-        StatusCode::OK,
-        Json(ApiResponse::GetChapter { data: chapter }),
-    )
+    match chapter {
+        Err(e) => {
+            println!("Error getting chapter: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiResponse::GetChapter { data: None }),
+            )
+        }
+        Ok(o_chapter) => (
+            StatusCode::OK,
+            Json(ApiResponse::GetChapter { data: o_chapter }),
+        ),
+    }
 }
 
 async fn get_book(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl IntoResponse {
-    let book = sqlx::query_as!(Book, "SELECT * FROM books WHERE id = $1", id)
+    let response = sqlx::query_as!(Book, "SELECT * FROM books WHERE id = $1", id)
         .fetch_optional(&pool)
-        .await
-        .unwrap();
+        .await;
 
-    (StatusCode::OK, Json(ApiResponse::GetBook { data: book }))
+    match response {
+        Err(e) => {
+            println!("Error getting book: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiResponse::GetBook { data: None }),
+            )
+        }
+        Ok(o_book) => (StatusCode::OK, Json(ApiResponse::GetBook { data: o_book })),
+    }
 }
 
 async fn update_book(
@@ -312,4 +402,23 @@ async fn update_book(
 
 async fn health() -> &'static str {
     "Healthy!"
+}
+
+#[derive(Debug)]
+pub struct AppError(anyhow::Error);
+
+impl IntoResponse for AppError {
+    fn into_response(self) -> axum::response::Response {
+        tracing::error!("Application error: {:#}", self.0);
+        (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong").into_response()
+    }
+}
+
+impl<E> From<E> for AppError
+where
+    E: Into<anyhow::Error>,
+{
+    fn from(e: E) -> Self {
+        Self(e.into())
+    }
 }

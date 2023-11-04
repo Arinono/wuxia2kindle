@@ -6,3 +6,6 @@
 .env.local
 
 .vscode
+
+node_modules
+src/styles/tailwind.css
