@@ -20,12 +20,6 @@ pub struct UpdateBook {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub enum Requests {
-    GetBook,
-    UpdateBook(UpdateBook),
-}
-
-#[derive(Debug, Deserialize, Serialize)]
 pub enum Responses {
     GetBook { data: Book },
     GetBooks { data: Vec<Book> },

@@ -1,12 +1,13 @@
 use axum::{
     extract::{Path, State},
     response::{IntoResponse, Json},
-    http::StatusCode,
+    http::StatusCode, debug_handler,
 };
 use sqlx::PgPool;
 
 use super::{Book, Responses::{GetBook, GetBooks, Empty}};
 
+#[debug_handler]
 pub async fn get_book(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl IntoResponse {
     let response = sqlx::query_as!(Book, "SELECT * FROM books WHERE id = $1", id)
         .fetch_optional(&pool)
@@ -24,6 +25,7 @@ pub async fn get_book(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl I
     }
 }
 
+#[debug_handler]
 pub async fn get_books(State(pool): State<PgPool>) -> impl IntoResponse {
     let books = sqlx::query_as!(Book, "SELECT * FROM books ORDER BY name")
         .fetch_all(&pool)

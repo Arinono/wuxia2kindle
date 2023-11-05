@@ -1,9 +1,13 @@
-use axum::{extract::Path, response::Response};
-use reqwest::StatusCode;
+use axum::{
+    extract::Path,
+    http::StatusCode,
+    response::{IntoResponse, Response}, debug_handler,
+};
 
 use super::{discord::DiscordAuth, oauth::Service};
 
-pub async fn login(Path(service): Path<String>) -> Response<String> {
+#[debug_handler]
+pub async fn login(Path(service): Path<String>) -> impl IntoResponse {
     let service = match service.as_str() {
         "discord" => Service::Discord(DiscordAuth::new()),
         _ => {

@@ -1,12 +1,13 @@
 use axum::{
     extract::{Path, State, Json},
     response::IntoResponse,
-    http::StatusCode,
+    http::StatusCode, debug_handler,
 };
 use sqlx::PgPool;
 
 use super::{Book, UpdateBook};
 
+#[debug_handler]
 pub async fn update_book(
     State(pool): State<PgPool>,
     Path(id): Path<i32>,

@@ -2,7 +2,7 @@ use anyhow::{Result, Context};
 use axum::{
     extract::{Path, Query, State},
     http::HeaderMap,
-    response::{IntoResponse, Html},
+    response::{IntoResponse, Html}, debug_handler,
 };
 use reqwest::header::SET_COOKIE;
 use serde::Deserialize;
@@ -20,6 +20,8 @@ use super::{
 pub struct CallbackQueryParam {
     code: String,
 }
+
+#[debug_handler]
 pub async fn login_callback(
     State(pool): State<PgPool>,
     Path(service): Path<String>,

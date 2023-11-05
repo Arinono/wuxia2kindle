@@ -1,9 +1,35 @@
+pub mod add;
+
 use serde::{Deserialize, Serialize};
 use sqlx::types::{
     chrono::{DateTime, Utc},
     JsonValue,
 };
 use std::fmt::Display;
+
+#[derive(Debug, Deserialize, Serialize)]
+pub enum Responses {
+    AddToQueue { success: bool },
+    Empty,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct AddToQueue {
+    kind: ExportKinds,
+}
+
+impl Display for ExportKinds {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ExportKinds::ChaptersRange { book_id, chapters } => write!(
+                f,
+                "{}: Chapters from {} to {}",
+                book_id, chapters.0, chapters.1
+            ),
+            _ => todo!(),
+        }
+    }
+}
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum ExportKinds {
