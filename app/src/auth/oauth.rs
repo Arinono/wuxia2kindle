@@ -21,6 +21,7 @@ pub struct OAuthToken {
 pub struct OAuthUser {
     pub id: String,
     pub username: String,
+    pub avatar: Option<String>,
 }
 
 trait OAuth {
@@ -102,7 +103,15 @@ impl Service {
                     .send()
                     .await?;
 
-                let user: OAuthUser = response.json().await?;
+                let mut user: OAuthUser = response.json().await?;
+
+                user.avatar = match user.avatar {
+                    Some(avatar) => Some(format!(
+                        "https://cdn.discordapp.com/avatars/{}/{}.png",
+                        user.id, avatar
+                    )),
+                    None => None,
+                };
 
                 Ok(user)
             }

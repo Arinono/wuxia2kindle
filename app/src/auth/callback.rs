@@ -57,6 +57,14 @@ pub async fn login_callback(
         return Ok((headers, Html("User not found")));
     }
 
+    if user.avatar.is_some() {
+        sqlx::query!(
+            "UPDATE users SET avatar = $1 WHERE id = $2",
+            user.avatar,
+            db_user.as_ref().unwrap().id,
+        ).execute(&pool).await?;
+    }
+
     let jwt = JWT::new(db_user.unwrap().id.to_string());
 
     headers.insert(
