@@ -28,7 +28,7 @@ command = [
     "cargo", "run",
     "--color", "always",
     "--",
-    "ingest"
+    "server"
 ]
 need_stdout = true
 allow_warnings = true

@@ -1,6 +1,18 @@
-use crate::{
-    models::{Book, Chapter, ExportKinds},
-    pool, auth::{login::login, callback::login_callback, cookie::get_cookie},
+pub mod auth;
+pub mod books;
+pub mod chapters;
+pub mod exports;
+
+use super::pool;
+use self::{
+    auth::{callback::login_callback, cookie::get_cookie, login::login},
+    books::{
+        Book,
+        get::{get_book, get_books},
+        update::update_book,
+    },
+    chapters::Chapter,
+    exports::ExportKinds,
 };
 use axum::{
     body::{self, Empty, Full},
@@ -166,12 +178,6 @@ struct AddToQueue {
     kind: ExportKinds,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-struct UpdateBook {
-    pub name: Option<String>,
-    pub cover: Option<String>,
-}
-
 impl Display for ExportKinds {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -189,17 +195,13 @@ impl Display for ExportKinds {
 enum ApiRequest {
     AddChapter(AddChapter),
     AddToQueue(AddToQueue),
-    GetBooks,
-    UpdateBook(UpdateBook),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 enum ApiResponse {
     AddChapter { success: bool },
     AddToQueue { success: bool },
-    GetBooks { data: Vec<Book> },
     GetChapters { data: Vec<Chapter> },
-    GetBook { data: Option<Book> },
     GetChapter { data: Option<Chapter> },
 }
 
@@ -299,15 +301,6 @@ async fn add_to_queue(
     )
 }
 
-async fn get_books(State(pool): State<PgPool>) -> impl IntoResponse {
-    let books = sqlx::query_as!(Book, "SELECT * FROM books ORDER BY name",)
-        .fetch_all(&pool)
-        .await
-        .unwrap();
-
-    (StatusCode::OK, Json(ApiResponse::GetBooks { data: books }))
-}
-
 async fn get_chapters(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl IntoResponse {
     let chapters = sqlx::query_as!(
         Chapter,
@@ -342,62 +335,6 @@ async fn get_chapter(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl In
             Json(ApiResponse::GetChapter { data: o_chapter }),
         ),
     }
-}
-
-async fn get_book(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl IntoResponse {
-    let response = sqlx::query_as!(Book, "SELECT * FROM books WHERE id = $1", id)
-        .fetch_optional(&pool)
-        .await;
-
-    match response {
-        Err(e) => {
-            println!("Error getting book: {}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ApiResponse::GetBook { data: None }),
-            )
-        }
-        Ok(o_book) => (StatusCode::OK, Json(ApiResponse::GetBook { data: o_book })),
-    }
-}
-
-async fn update_book(
-    State(pool): State<PgPool>,
-    Path(id): Path<i32>,
-    Json(input): Json<UpdateBook>,
-) -> impl IntoResponse {
-    if let Ok(o_book) = sqlx::query_as!(Book, "SELECT * FROM books WHERE id = $1", id)
-        .fetch_optional(&pool)
-        .await
-    {
-        if let Some(mut book) = o_book {
-            if let Some(name) = input.name {
-                book.name = name;
-            }
-
-            if let Some(cover) = input.cover {
-                book.cover = Some(cover);
-            }
-
-            let res = sqlx::query!(
-                "UPDATE books SET name = $2, cover = $3 WHERE id = $1",
-                id,
-                book.name,
-                book.cover
-            )
-            .execute(&pool)
-            .await;
-
-            if let Err(e) = res {
-                println!("Error updating book: {e}");
-                return (StatusCode::INTERNAL_SERVER_ERROR, ());
-            }
-
-            return (StatusCode::ACCEPTED, ());
-        }
-    }
-
-    (StatusCode::NOT_FOUND, ())
 }
 
 async fn health() -> &'static str {

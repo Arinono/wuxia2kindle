@@ -4,7 +4,7 @@ use axum::http::HeaderMap;
 use serde::Deserialize;
 use url::form_urlencoded::byte_serialize;
 
-use crate::ingest::AppError;
+use self::super::super::AppError;
 
 use super::discord::DiscordAuth;
 

@@ -3,7 +3,7 @@ use std::fmt::Display;
 use jsonwebtoken::{encode, Header, EncodingKey, Validation, decode, DecodingKey};
 use serde::{Serialize, Deserialize};
 
-use crate::ingest::AppError;
+use self::super::super::AppError;
 
 use super::cookie::COOKIE_NAME;
 

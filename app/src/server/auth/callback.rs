@@ -8,12 +8,13 @@ use reqwest::header::SET_COOKIE;
 use serde::Deserialize;
 use sqlx::PgPool;
 
-use crate::ingest::AppError;
-
-use super::discord::DiscordAuth;
-use super::jwt::JWT;
-use super::user::User;
-use super::oauth::Service;
+use super::{
+    jwt::JWT,
+    oauth::Service,
+    user::User,
+    discord::DiscordAuth,
+    super::AppError,
+};
 
 #[derive(Debug, Deserialize)]
 pub struct CallbackQueryParam {

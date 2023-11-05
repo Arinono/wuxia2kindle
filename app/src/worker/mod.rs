@@ -1,5 +1,8 @@
-use std::time::Duration;
+mod epub;
 
+use epub::Epub;
+
+use std::time::Duration;
 use lettre::{
     message::{header::ContentType, Attachment},
     Message, SmtpTransport, Transport,
@@ -7,9 +10,12 @@ use lettre::{
 use sqlx::PgPool;
 use tokio::time::interval;
 
-use crate::{
-    epub::Epub,
-    models::{Book, Chapter, Export, ExportKinds},
+use super::{
+    server::{
+        books::Book,
+        chapters::Chapter,
+        exports::{Export, ExportKinds},
+    },
     pool,
 };
 

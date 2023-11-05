@@ -1,8 +1,5 @@
-mod auth;
-mod epub;
-mod ingest;
-mod models;
 mod pool;
+mod server;
 mod worker;
 
 use clap::{Parser, Subcommand};
@@ -18,7 +15,7 @@ struct Cli {
 #[derive(Debug, Subcommand)]
 enum Commands {
     #[command(arg_required_else_help = false)]
-    Ingest,
+    Server,
     Worker,
 }
 
@@ -26,7 +23,7 @@ fn main() {
     let args = Cli::parse();
 
     match args.command {
-        Commands::Ingest => {
+        Commands::Server => {
             std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
             std::env::var("DOMAIN").expect("DOMAIN must be set");
 
@@ -36,7 +33,7 @@ fn main() {
 
             let port = env_port.parse::<u16>().expect("PORT must be a number");
 
-            ingest::start(port, env_db_url);
+            server::start(port, env_db_url);
         }
         Commands::Worker => {
             let env_db_url = std::env::var("DATABASE_URL")
