@@ -1,0 +1,86 @@
+<html>
+  <head>
+    <title>Home</title>
+    <script src="https://unpkg.com/htmx.org@1.9.7"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.7/dist/ext/response-targets.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="m-0 bg-gray-900 text-gray-200">
+    <!-- TOPBAR -->
+    <div class="h-12 sticky shadow z-10 top bg-gray-800 flex items-center">
+      <div class="text-lg ml-4 flex justify-between items-center w-full">
+        <strong>Home</strong>
+
+        <button id="avatar">
+          <div
+            hx-trigger="load"
+            hx-get="/components/avatar"
+            hx-swap="innerHTML"
+            class="mr-4"
+          />
+        </button>
+        <div
+          id="menu"
+          class="hidden absolute right-4 top-12 bg-gray-700 rounded shadow-lg p-4"
+        >
+          <ul>
+            <li
+              hx-trigger="click"
+              hx-get="/logout"
+              class="cursor-pointer flex items-center"
+            >
+              <span class="mr-2"
+                ><svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  class="fill-current h-6 w-6"
+                >
+                  <title>logout</title>
+                  <path
+                    d="M17 8L15.6 9.4L17.2 11H9V13H17.2L15.6 14.6L17 16L21 12L17 8M5 5H12V3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H12V19H5V5Z"
+                  /></svg
+              ></span>
+              <span>Logout</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <!-- END TOPBAR -->
+
+    <h1>Book</h1>
+    <div>
+      <div
+        hx-trigger="load"
+        hx-get="/components/books"
+        hx-swap="outerHTML"
+      />
+    </div>
+  </body>
+  <script>
+    ;(() => {
+      const avatar = document.getElementById('avatar')
+      const menu = document.getElementById('menu')
+      const body = document.body
+
+      function clickOutside() {
+        if (!menu.contains(event.target)) {
+          toggleMenu()
+        }
+      }
+
+      function toggleMenu() {
+        menu.classList.toggle('hidden')
+        if (menu.classList.contains('hidden')) {
+          body.removeEventListener('click', clickOutside)
+        } else {
+          setTimeout(() => {
+            body.addEventListener('click', clickOutside)
+          })
+        }
+      }
+
+      avatar.addEventListener('click', toggleMenu)
+    })()
+  </script>
+</html>

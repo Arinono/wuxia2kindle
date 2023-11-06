@@ -11,7 +11,6 @@ use super::{
 pub static COOKIE_NAME: &str = "wuxia2kindle_session";
 
 pub async fn get_cookie(headers: &HeaderMap, pool: &PgPool) -> Option<User> {
-    println!("Headers: {:?}", headers);
     let cookie_header = headers.get("Cookie");
 
     if cookie_header.is_none() {

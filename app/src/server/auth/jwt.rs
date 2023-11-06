@@ -65,7 +65,8 @@ pub struct JWT {
     pub name: String,
     pub payload: String,
     pub domain: String,
-    pub max_age: u64,
+    pub max_age: Option<u64>,
+    pub expires: Option<String>,
     pub path: String,
 }
 
@@ -95,7 +96,8 @@ impl JWT {
             name: COOKIE_NAME.to_owned(),
             payload: signed_token,
             domain,
-            max_age: 15 * 60,
+            max_age: Some(15 * 60),
+            expires: None,
             path: "/".to_owned(),
         }
     }
@@ -114,13 +116,36 @@ impl JWT {
 
         Ok(decoded.claims)
     }
+
+    pub fn destroy() -> Self {
+        let domain = std::env::var("DOMAIN").expect("DOMAIN must be set");
+
+        Self {
+            name: COOKIE_NAME.to_owned(),
+            payload: "".to_owned(),
+            domain,
+            max_age: None,
+            expires: Some("Thu, 01 Jan 1970 00:00:00 GMT".to_owned()),
+            path: "/".to_owned(),
+        }
+    }
 }
 
 impl Display for JWT {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let max_age = match self.max_age {
+            Some(max_age) => format!("{}={};", "Max-Age", max_age.to_string()),
+            None => ";".to_owned(),
+        };
+
+        let expires = match &self.expires {
+            Some(expires) => format!("{}={};", "Expires", expires),
+            None => ";".to_owned(),
+        };
+
         let cookie = format!(
-            "{}={}; Domain={}; Max-Age={}; Path={}; Secure; HttpOnly; SameSite=Strict",
-            self.name, self.payload, self.domain, self.max_age, self.path
+            "{}={}; Domain={}; Path={}; Secure; HttpOnly; SameSite=Strict; {}{}",
+            self.name, self.payload, self.domain, self.path, max_age, expires,
         );
 
         write!(f, "{}", cookie)

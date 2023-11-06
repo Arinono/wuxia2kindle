@@ -1,12 +1,15 @@
 pub mod auth;
 pub mod books;
 pub mod chapters;
+pub mod components;
 pub mod exports;
 pub mod files;
 pub mod health;
 
 use self::{
-    auth::{callback::login_callback, login::login},
+    auth::{
+        callback::login_callback, cookie::get_cookie, login::login, logout::logout, user::User,
+    },
     books::{
         get::{get_book, get_books},
         update::update_book,
@@ -15,19 +18,22 @@ use self::{
         add::add_chapter,
         get::{get_chapter, get_chapters},
     },
+    components::avatar::avatar,
     exports::add::add_to_queue,
-    files::{static_path, index},
+    files::{index, static_path, login_page},
     health::health,
 };
 use super::pool;
 use axum::{
+    async_trait,
     error_handling::HandleErrorLayer,
-    extract::{DefaultBodyLimit, FromRef},
+    extract::{DefaultBodyLimit, FromRef, FromRequestParts},
     http::{
         header::{self},
-        HeaderValue, Method, StatusCode,
+        request::Parts,
+        HeaderMap, HeaderValue, Method, StatusCode,
     },
-    response::IntoResponse,
+    response::{IntoResponse, Redirect},
     routing::{get, post},
     Router,
 };
@@ -57,11 +63,20 @@ pub async fn start(port: u16, database_url: String) {
 
     // build our application with a route
     let app = Router::new()
-        .route("/*path", get(static_path))
+        // statics
+        .route("/login", get(login_page))
+        .route("/login.html", get(login_page))
         .route("/", get(index))
+        .route("/*path", get(static_path))
+        // misc
         .route("/health", get(health))
+        // auth
         .route("/auth/:service/login", get(login))
+        .route("/logout", get(logout))
         .route("/auth/:service/callback", get(login_callback))
+        // components
+        .route("/components/avatar", get(avatar))
+        // legacy
         .route("/chapter", post(add_chapter))
         .route("/chapter/:id", get(get_chapter))
         .route("/books", get(get_books))
@@ -128,5 +143,35 @@ where
 {
     fn from(e: E) -> Self {
         Self(e.into())
+    }
+}
+
+pub struct AuthRedirect;
+
+impl IntoResponse for AuthRedirect {
+    fn into_response(self) -> axum::response::Response {
+        Redirect::temporary("/login").into_response()
+    }
+}
+
+#[async_trait]
+impl<S> FromRequestParts<S> for User
+where
+    PgPool: FromRef<S>,
+    S: Send + Sync,
+{
+    // If anything goes wrong or no session is found, redirect to the auth page
+    type Rejection = AuthRedirect;
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let pool = PgPool::from_ref(state);
+        let header = parts.headers.get("cookie").ok_or(AuthRedirect)?;
+
+        let mut headers = HeaderMap::new();
+        headers.insert("cookie", header.clone());
+
+        let user = get_cookie(&headers, &pool).await.ok_or(AuthRedirect)?;
+
+        Ok(user)
     }
 }

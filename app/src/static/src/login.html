@@ -1,10 +1,9 @@
 <html>
   <head>
-    <title>Home</title>
-    <link
-      rel="stylesheet"
-      href="styles/tailwind.css"
-    />
+    <title>Login</title>
+    <script src="https://unpkg.com/htmx.org@1.9.7"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.7/dist/ext/response-targets.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body
     class="m-0 bg-gray-800 text-white w-full h-full flex items-center justify-center"
@@ -14,7 +13,7 @@
       class="flex flex-col items-center"
     >
       <button
-        id="discord-buttn"
+        id="discord-button"
         class="flex items-center py-2 px-4 rounded-lg bg-[#5865F2] hover:bg-[#5865F2]/80 hover:text-white/80 transition-colors duration-300"
       >
         <svg
@@ -45,7 +44,7 @@
         let popup = null
         let interval = null
 
-        const btn = document.getElementById('discord-buttn')
+        const btn = document.getElementById('discord-button')
         btn.addEventListener('click', () => {
           if (!popup || popup.closed) {
             popup = window.open(
@@ -58,7 +57,7 @@
           interval = setInterval(() => {
             if (popup && popup.closed) {
               clearInterval(interval)
-              window.location.reload()
+              window.location.href = "/";
             }
           }, 500)
         })

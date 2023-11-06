@@ -1,12 +1,9 @@
 {
   "type": "module",
   "scripts": {
-    "fmt": "prettier --write .",
-    "dev": "tailwindcss -i ./src/styles/main.css -o ./src/styles/tailwind.css --watch",
-    "build": "tailwindcss -i ./src/styles/main.css -o ./src/styles/tailwind.css"
+    "fmt": "prettier --write ."
   },
   "devDependencies": {
-    "prettier": "^3.0.3",
-    "tailwindcss": "^3.3.5"
+    "prettier": "^3.0.3"
   }
 }
