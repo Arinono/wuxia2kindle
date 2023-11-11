@@ -1,0 +1,31 @@
+{% extends "authenticated.html" %}
+
+{% block title %}Home | {% endblock %}
+
+{% block head %}
+<style>
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 115%;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% call super() %}
+<main class="sm:px-10 px-6 mx-auto max-w-[1280px] pt-4 pb-10 sm:pt-8 sm:pb-2">
+  <div class="py-3 md:pb-0">
+    <h1>Books</h1>
+    <div
+      hx-trigger="load"
+      hx-get="/books"
+      hx-target=".wrapper"
+      hx-swap="innerHTML"
+      class="overflow-x-hidden md:py-3 py-2"
+    >
+      <div class="wrapper w-full flex flex-wrap"></div>
+    </div>
+  </div>
+</main>
+{% endblock %}

@@ -4,11 +4,10 @@ use askama_axum::IntoResponse;
 use crate::server::auth::user::User;
 
 #[derive(Template)]
-#[template(path = "avatar.html")]
-#[allow(dead_code)]
+#[template(path = "partials/avatar.html")]
 pub struct Avatar {
-    pub name: String,
-    pub avatar: String,
+    name: String,
+    avatar: String,
 }
 
 pub async fn avatar(user: User) -> impl IntoResponse {

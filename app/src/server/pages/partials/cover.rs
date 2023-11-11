@@ -6,7 +6,7 @@ use sqlx::PgPool;
 use crate::server::{auth::user::User, AppError};
 
 #[derive(Template)]
-#[template(path = "cover.html")]
+#[template(path = "partials/cover.html")]
 pub struct Cover {
     name: String,
     cover: Option<String>,

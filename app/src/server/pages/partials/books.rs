@@ -5,15 +5,15 @@ use sqlx::PgPool;
 
 use crate::server::{auth::user::User, books::Book, AppError};
 
-pub struct PartialBook {
+pub struct MinimalBook {
     name: String,
     id: i32,
 }
 
 #[derive(Template)]
-#[template(path = "books.html")]
+#[template(path = "partials/books.html")]
 pub struct Books {
-    books: Vec<PartialBook>,
+    books: Vec<MinimalBook>,
 }
 
 pub async fn books(_user: User, State(pool): State<PgPool>) -> Result<Books, AppError> {
@@ -23,7 +23,7 @@ pub async fn books(_user: User, State(pool): State<PgPool>) -> Result<Books, App
 
     let books = response
         .into_iter()
-        .map(|book| PartialBook {
+        .map(|book| MinimalBook {
             name: book.name.clone(),
             id: book.id,
         })

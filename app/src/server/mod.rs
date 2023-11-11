@@ -1,14 +1,13 @@
 pub mod auth;
 pub mod books;
 pub mod chapters;
-pub mod components;
 pub mod exports;
-pub mod files;
 pub mod health;
+pub mod pages;
 
 use self::{
     auth::{
-        callback::login_callback, cookie::get_cookie, login::login, logout::logout, user::User,
+        callback::login_callback, cookie::get_cookie, logout::logout, user::User,
     },
     books::{
         get::{get_book, get_books},
@@ -18,9 +17,7 @@ use self::{
         add::add_chapter,
         get::{get_chapter, get_chapters},
     },
-    components::{avatar::avatar, books::books, cover::cover},
     exports::add::add_to_queue,
-    files::{index, login_page, static_path},
     health::health,
 };
 use super::pool;
@@ -31,11 +28,11 @@ use axum::{
     http::{
         header::{self},
         request::Parts,
-        HeaderMap, HeaderValue, Method, StatusCode,
+        HeaderMap, HeaderValue, Method, StatusCode, Response,
     },
     response::{IntoResponse, Redirect},
     routing::{get, post},
-    Router,
+    Router, body::{self, Empty},
 };
 use include_dir::{include_dir, Dir};
 use sqlx::PgPool;
@@ -44,8 +41,6 @@ use tower::{BoxError, ServiceBuilder};
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
-static STATIC_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/src/static/src");
 
 #[tokio::main]
 pub async fn start(port: u16, database_url: String) {
@@ -63,26 +58,25 @@ pub async fn start(port: u16, database_url: String) {
 
     // build our application with a route
     let app = Router::new()
-        // statics
-        .route("/login", get(login_page))
-        .route("/login.html", get(login_page))
-        .route("/", get(index))
-        .route("/*path", get(static_path))
+        .route("/login", get(pages::login::login))
+        .route("/", get(pages::home::home))
+        .route("/avatar", get(pages::partials::avatar::avatar))
+        .route("/books", get(pages::partials::books::books))
+        .route("/book/:id", get(pages::book::book))
+        .route("/book/:id/cover", get(pages::partials::cover::cover))
+        
         // misc
         .route("/health", get(health))
         // auth
-        .route("/auth/:service/login", get(login))
+        .route("/auth/:service/login", get(auth::login::login))
         .route("/logout", get(logout))
         .route("/auth/:service/callback", get(login_callback))
         // new
-        .route("/avatar", get(avatar))
-        .route("/books", get(books))
-        .route("/book/:id/cover", get(cover))
         // legacy
         .route("/chapter", post(add_chapter))
         .route("/chapter/:id", get(get_chapter))
         // .route("/books", get(get_books))
-        .route("/book/:id", get(get_book).patch(update_book))
+        // .route("/book/:id", get(get_book).patch(update_book))
         .route("/book/:id/chapters", get(get_chapters))
         .route("/export", post(add_to_queue))
         .layer(
@@ -133,12 +127,38 @@ impl FromRef<AppState> for PgPool {
 }
 
 #[derive(Debug)]
+pub struct UserAlreadyLoggedIn;
+
+impl IntoResponse for UserAlreadyLoggedIn {
+    fn into_response(self) -> axum::response::Response {
+        Response::builder()
+            .status(StatusCode::FOUND)
+            .header("Location", "/")
+            .body(body::boxed(Empty::new()))
+            .unwrap()
+    }
+}
+
+#[derive(Debug)]
+pub struct Unauthenticated;
+
+impl IntoResponse for Unauthenticated {
+    fn into_response(self) -> axum::response::Response {
+        Response::builder()
+            .status(StatusCode::FOUND)
+            .header("Location", "/login")
+            .body(body::boxed(Empty::new()))
+            .unwrap()
+    }
+}
+
+#[derive(Debug)]
 pub struct AppError(anyhow::Error);
 
 impl IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
         tracing::error!("Application error: {:#}", self.0);
-        (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong").into_response()
+        (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong.").into_response()
     }
 }
 
