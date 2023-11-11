@@ -1,12 +1,12 @@
 use askama::Template;
 use askama_axum::IntoResponse;
 
-use super::super::super::server::auth::user::User;
+use crate::server::auth::user::User;
 
 #[derive(Template)]
 #[template(path = "avatar.html")]
 #[allow(dead_code)]
-struct Avatar {
+pub struct Avatar {
     pub name: String,
     pub avatar: String,
 }

@@ -18,9 +18,9 @@ use self::{
         add::add_chapter,
         get::{get_chapter, get_chapters},
     },
-    components::avatar::avatar,
+    components::{avatar::avatar, books::books, cover::cover},
     exports::add::add_to_queue,
-    files::{index, static_path, login_page},
+    files::{index, login_page, static_path},
     health::health,
 };
 use super::pool;
@@ -74,19 +74,24 @@ pub async fn start(port: u16, database_url: String) {
         .route("/auth/:service/login", get(login))
         .route("/logout", get(logout))
         .route("/auth/:service/callback", get(login_callback))
-        // components
-        .route("/components/avatar", get(avatar))
+        // new
+        .route("/avatar", get(avatar))
+        .route("/books", get(books))
+        .route("/book/:id/cover", get(cover))
         // legacy
         .route("/chapter", post(add_chapter))
         .route("/chapter/:id", get(get_chapter))
-        .route("/books", get(get_books))
+        // .route("/books", get(get_books))
         .route("/book/:id", get(get_book).patch(update_book))
         .route("/book/:id/chapters", get(get_chapters))
         .route("/export", post(add_to_queue))
         .layer(
             CorsLayer::new()
                 .allow_credentials(true)
-                .allow_origin(domain.parse::<HeaderValue>().unwrap())
+                .allow_origin(vec![
+                    domain.parse::<HeaderValue>().unwrap(),
+                    "https://www.wuxiaworld.com".parse::<HeaderValue>().unwrap(),
+                ])
                 .allow_methods([Method::GET, Method::POST, Method::OPTIONS, Method::PATCH])
                 .allow_headers(vec![header::CONTENT_TYPE, header::ACCEPT, header::COOKIE]),
         )

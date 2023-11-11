@@ -1,0 +1,11 @@
+{% match cover %} {% when Some with (b64) %}
+<img
+  src="{{ b64 }}"
+  alt="{{ name }} cover"
+  class="absolute top-0 left-0 w-full h-full overflow-hidden whitespace-nowrap object-cover indent-[100%] self cetner roudned-r-5 drop-shadow-ww-home-content-image"
+/>
+{% when None %}
+<div class="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-[rgb(200,200,200)] via-[rgb(100,100,100)] to-[rgb(18,18,18)] via-[1%] to-[99%]">
+  <div class="w-full h-full flex items-center justify-center text-gray-300 text-center px-6 text-lg">{{ name }}</div>
+</div>
+{% endmatch %}

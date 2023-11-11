@@ -1,6 +1,6 @@
 <html>
   <head>
-    <title>Home</title>
+    <title>Wuxia 2 Kindle</title>
     <script src="https://unpkg.com/htmx.org@1.9.7"></script>
     <script src="https://unpkg.com/htmx.org@1.9.7/dist/ext/response-targets.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,7 +14,7 @@
         <button id="avatar">
           <div
             hx-trigger="load"
-            hx-get="/components/avatar"
+            hx-get="/avatar"
             hx-swap="innerHTML"
             class="mr-4"
           />
@@ -48,15 +48,28 @@
     </div>
     <!-- END TOPBAR -->
 
-    <h1>Book</h1>
-    <div>
-      <div
-        hx-trigger="load"
-        hx-get="/components/books"
-        hx-swap="outerHTML"
-      />
-    </div>
+    <main class="sm:px-10 px-6 mx-auto max-w-[1280px] pt-4 pb-10 sm:pt-8 sm:pb-2">
+      <div class="py-3 md:pb-0">
+        <h1>Books</h1>
+        <div
+          hx-trigger="load"
+          hx-get="/books"
+          hx-target=".wrapper"
+          hx-swap="innerHTML"
+          class="overflow-x-hidden md:py-3 py-2"
+        >
+          <div class="wrapper w-full flex flex-wrap"></div>
+        </div>
+      </div>
+    </main
   </body>
+  <style>
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      line-height: 115%;
+    }
+  </style>
   <script>
     ;(() => {
       const avatar = document.getElementById('avatar')
