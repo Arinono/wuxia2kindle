@@ -21,6 +21,7 @@ use self::{
     health::health,
 };
 use super::pool;
+use askama::Template;
 use axum::{
     async_trait,
     error_handling::HandleErrorLayer,
@@ -30,11 +31,10 @@ use axum::{
         request::Parts,
         HeaderMap, HeaderValue, Method, StatusCode, Response,
     },
-    response::{IntoResponse, Redirect},
+    response::{IntoResponse, Redirect, Html},
     routing::{get, post},
     Router, body::{self, Empty},
 };
-use include_dir::{include_dir, Dir};
 use sqlx::PgPool;
 use std::time::Duration;
 use tower::{BoxError, ServiceBuilder};
@@ -127,55 +127,75 @@ impl FromRef<AppState> for PgPool {
 }
 
 #[derive(Debug)]
-pub struct UserAlreadyLoggedIn;
+pub enum Error {
+    NotFound(String),
+    UserAlreadyLoggedIn,
+    Unauthenticated,
+    AppError(anyhow::Error),
+    AuthRedirect,
+}
 
-impl IntoResponse for UserAlreadyLoggedIn {
-    fn into_response(self) -> axum::response::Response {
-        Response::builder()
-            .status(StatusCode::FOUND)
-            .header("Location", "/")
-            .body(body::boxed(Empty::new()))
-            .unwrap()
+#[derive(Template)]
+#[template(path = "404.html")]
+pub struct NotFoundTemplate {
+    message: String,
+}
+
+#[derive(Template)]
+#[template(path = "500.html")]
+pub struct AppErrorTemplate {
+    message: String,
+}
+
+impl IntoResponse for Error {
+    fn into_response(self) -> askama_axum::Response {
+        match self {
+            Self::NotFound(message) => {
+                let body = NotFoundTemplate {
+                    message,
+                }
+                .render()
+                .unwrap();
+
+                (StatusCode::NOT_FOUND, Html(body)).into_response()
+            },
+            Self::UserAlreadyLoggedIn => {
+                Response::builder()
+                    .status(StatusCode::FOUND)
+                    .header("Location", "/")
+                    .body(body::boxed(Empty::new()))
+                    .unwrap()
+            },
+            Self::Unauthenticated => {
+                Response::builder()
+                    .status(StatusCode::FOUND)
+                    .header("Location", "/login")
+                    .body(body::boxed(Empty::new()))
+                    .unwrap()
+            },
+            Self::AppError(e) => {
+                tracing::error!("Application error: {:#}", e);
+                let body = AppErrorTemplate {
+                    message: e.to_string(),
+                }
+                .render()
+                .unwrap();
+
+                (StatusCode::INTERNAL_SERVER_ERROR, Html(body)).into_response()
+            },
+            Self::AuthRedirect => {
+                Redirect::temporary("/login").into_response()
+            },
+        }
     }
 }
 
-#[derive(Debug)]
-pub struct Unauthenticated;
-
-impl IntoResponse for Unauthenticated {
-    fn into_response(self) -> axum::response::Response {
-        Response::builder()
-            .status(StatusCode::FOUND)
-            .header("Location", "/login")
-            .body(body::boxed(Empty::new()))
-            .unwrap()
-    }
-}
-
-#[derive(Debug)]
-pub struct AppError(anyhow::Error);
-
-impl IntoResponse for AppError {
-    fn into_response(self) -> axum::response::Response {
-        tracing::error!("Application error: {:#}", self.0);
-        (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong.").into_response()
-    }
-}
-
-impl<E> From<E> for AppError
+impl<E> From<E> for Error
 where
     E: Into<anyhow::Error>,
 {
     fn from(e: E) -> Self {
-        Self(e.into())
-    }
-}
-
-pub struct AuthRedirect;
-
-impl IntoResponse for AuthRedirect {
-    fn into_response(self) -> axum::response::Response {
-        Redirect::temporary("/login").into_response()
+        Self::AppError(e.into())
     }
 }
 
@@ -186,16 +206,16 @@ where
     S: Send + Sync,
 {
     // If anything goes wrong or no session is found, redirect to the auth page
-    type Rejection = AuthRedirect;
+    type Rejection = Error;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let pool = PgPool::from_ref(state);
-        let header = parts.headers.get("cookie").ok_or(AuthRedirect)?;
+        let header = parts.headers.get("cookie").ok_or(Error::AuthRedirect)?;
 
         let mut headers = HeaderMap::new();
         headers.insert("cookie", header.clone());
 
-        let user = get_cookie(&headers, &pool).await.ok_or(AuthRedirect)?;
+        let user = get_cookie(&headers, &pool).await.ok_or(Error::AuthRedirect)?;
 
         Ok(user)
     }

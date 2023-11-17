@@ -3,7 +3,7 @@ use std::fmt::Display;
 use jsonwebtoken::{encode, Header, EncodingKey, Validation, decode, DecodingKey};
 use serde::{Serialize, Deserialize};
 
-use self::super::super::AppError;
+use self::super::super::Error;
 
 use super::cookie::COOKIE_NAME;
 
@@ -80,8 +80,12 @@ impl JWT {
             .unwrap()
             .as_secs();
 
-        // 15 minutes
-        let exp = now + 15 * 60;
+        let exp = match domain.as_str() {
+            // 1 day
+            "localhost" => now + 24 * 60 * 60,
+            // 15 minutes
+            _ => now + 15 * 60,
+        };
 
         let claims = ClaimsBuilder::new().sub(user).exp(exp).iat(now).build();
 
@@ -102,7 +106,7 @@ impl JWT {
         }
     }
 
-    pub fn verify(token: String) -> Result<Claims, AppError> {
+    pub fn verify(token: String) -> Result<Claims, Error> {
         let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
         let mut validation = Validation::new(jsonwebtoken::Algorithm::HS256);
         validation.set_audience(&["wuxia2kindle"]);

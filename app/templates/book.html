@@ -1,4 +1,11 @@
+{% extends "authenticated.html" %}
+
+{% block title %}{{ name }} | {% call super() %}{% endblock %}
+
+{% block content %}
+{% call super() %}
 {{ name }}
 {% match chapter_count %} {% when Some with (count) %} ({{ count }}) {% when None %} (0) {% endmatch %}
 {% match author %} {% when Some with (author) %} by {{ author }} {% when None %} Unknown author {% endmatch %}
 {% match translator %} {% when Some with (translator) %} translated by {{ translator }} {% when None %} Unknown translator {% endmatch %}
+{% endblock %}

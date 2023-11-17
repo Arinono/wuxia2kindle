@@ -1,16 +1,6 @@
 {% extends "authenticated.html" %}
 
-{% block title %}Home | {% endblock %}
-
-{% block head %}
-<style>
-  h1 {
-    font-size: 1.75rem;
-    font-weight: 700;
-    line-height: 115%;
-  }
-</style>
-{% endblock %}
+{% block title %}Home | {% call super() %}{% endblock %}
 
 {% block content %}
 {% call super() %}
@@ -24,7 +14,7 @@
       hx-swap="innerHTML"
       class="overflow-x-hidden md:py-3 py-2"
     >
-      <div class="wrapper w-full flex flex-wrap"></div>
+      <div class="wrapper w-full grid gap-4 justify-between grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"></div>
     </div>
   </div>
 </main>

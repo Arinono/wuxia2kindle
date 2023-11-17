@@ -4,7 +4,7 @@ use axum::http::HeaderMap;
 use serde::Deserialize;
 use url::form_urlencoded::byte_serialize;
 
-use self::super::super::AppError;
+use self::super::super::Error;
 
 use super::discord::DiscordAuth;
 
@@ -73,7 +73,7 @@ impl Service {
         }
     }
 
-    pub async fn get_token(&self, code: &String) -> Result<OAuthToken, AppError> {
+    pub async fn get_token(&self, code: &String) -> Result<OAuthToken, Error> {
         match self {
             Service::Discord(discord) => {
                 let (headers, form) = discord.get_token_construct(code);
@@ -93,7 +93,7 @@ impl Service {
         }
     }
 
-    pub async fn get_user(&self, token: &OAuthToken) -> Result<OAuthUser, AppError> {
+    pub async fn get_user(&self, token: &OAuthToken) -> Result<OAuthUser, Error> {
         match self {
             Service::Discord(_) => {
                 let client = reqwest::Client::new();

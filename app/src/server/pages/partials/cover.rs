@@ -3,7 +3,7 @@ use askama::Template;
 use axum::extract::{Path, State};
 use sqlx::PgPool;
 
-use crate::server::{auth::user::User, AppError};
+use crate::server::{auth::user::User, Error};
 
 #[derive(Template)]
 #[template(path = "partials/cover.html")]
@@ -16,7 +16,7 @@ pub async fn cover(
     _user: User,
     State(pool): State<PgPool>,
     Path(book_id): Path<i32>,
-) -> Result<Cover, AppError> {
+) -> Result<Cover, Error> {
     let response = sqlx::query_as!(
         Cover,
         "SELECT name, cover from books where id = $1 LIMIT 1",

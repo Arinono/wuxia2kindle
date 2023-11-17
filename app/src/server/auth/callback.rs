@@ -13,7 +13,7 @@ use super::{
     oauth::Service,
     user::User,
     discord::DiscordAuth,
-    super::AppError,
+    super::Error,
 };
 
 #[derive(Debug, Deserialize)]
@@ -26,7 +26,7 @@ pub async fn login_callback(
     State(pool): State<PgPool>,
     Path(service): Path<String>,
     Query(query): Query<CallbackQueryParam>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<impl IntoResponse, Error> {
     let mut headers = HeaderMap::new();
 
     let code = &query.code;
