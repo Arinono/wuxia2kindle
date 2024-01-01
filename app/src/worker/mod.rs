@@ -2,21 +2,21 @@ mod epub;
 
 use epub::Epub;
 
-use std::time::Duration;
 use lettre::{
     message::{header::ContentType, Attachment},
     Message, SmtpTransport, Transport,
 };
 use sqlx::PgPool;
+use std::time::Duration;
 use tokio::time::interval;
 
 use super::{
+    pool,
     server::{
         books::Book,
         chapters::Chapter,
         exports::{Export, ExportKinds},
     },
-    pool,
 };
 
 #[tokio::main]

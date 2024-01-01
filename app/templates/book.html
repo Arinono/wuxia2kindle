@@ -1,11 +1,58 @@
 {% extends "authenticated.html" %}
 
-{% block title %}{{ name }} | {% call super() %}{% endblock %}
+{% block title %}
+{{ book.name }} | {% call super() %}
+{% endblock %}
 
 {% block content %}
 {% call super() %}
-{{ name }}
-{% match chapter_count %} {% when Some with (count) %} ({{ count }}) {% when None %} (0) {% endmatch %}
-{% match author %} {% when Some with (author) %} by {{ author }} {% when None %} Unknown author {% endmatch %}
-{% match translator %} {% when Some with (translator) %} translated by {{ translator }} {% when None %} Unknown translator {% endmatch %}
+<main class="sm:px-10 px-6 mx-auto max-w-[1280px] pt-4 pb-10 sm:pt-8 sm:pb-2">
+  <div class="py-3">
+    <div class="flex space-x-12">
+      <div class="max-w-full">
+        <div class="mx-auto">
+          <div class="h-72 w-48 relative">
+            {% include "partials/cover_loader.html" %}
+          </div>
+        </div>
+      </div>
+      <div class="flex flex-col justify-between">
+        <div class="flex flex-col">
+          <h1 class="text-6xl mb-4">{{ book.name }}</h1>
+          <span><strong>Written by:</strong>
+            {% match book.author %}
+              {% when Some with (author) %}
+                {{ author }}
+              {% when None %}
+                <em>Unknown</em>
+            {% endmatch %}
+          </span>
+          <span><strong>Translated by:</strong>
+            {% match book.translator %}
+              {% when Some with (translator) %}
+                {{ translator }}
+              {% when None %}
+                <em>Unknown</em>
+            {% endmatch %}
+          </span>
+        </div>
+
+        {% include "partials/export-btn.html" %}
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <h2 class="text-5xl mt-8 mb-4 mr-8">Chapters
+        <span class="ml-2">
+          {% match book.chapter_count %}
+            {% when Some with (count) %}
+              ({{ count }})
+            {% when None %}
+              (0)
+          {% endmatch %}
+        <span>
+      </h2>
+    </div>
+  </div>
+</main>
 {% endblock %}

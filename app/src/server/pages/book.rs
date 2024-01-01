@@ -1,13 +1,11 @@
 use anyhow::Result;
 use askama::Template;
-use axum::extract::{State, Path};
+use axum::extract::{Path, State};
 use sqlx::PgPool;
 
-use crate::server::{auth::user::User, books::Book, Error};
+use crate::server::{auth::user::User, Error};
 
-#[derive(Template)]
-#[template(path = "book.html")]
-pub struct NoCoverBook {
+struct NoCoverBook {
     id: i32,
     name: String,
     chapter_count: Option<i32>,
@@ -15,21 +13,93 @@ pub struct NoCoverBook {
     translator: Option<String>,
 }
 
-pub async fn book(_user: User, State(pool): State<PgPool>, Path(book_id): Path<i32>) -> Result<NoCoverBook, Error> {
-    let response = sqlx::query_as!(Book, "SELECT * FROM books WHERE id = $1 LIMIT 1", book_id)
-        .fetch_optional(&pool)
-        .await?;
+#[derive(Clone)]
+struct Chapter {
+    name: String,
+    number: i32,
+}
 
-    let book = match response {
-        Some(book) => NoCoverBook {
-            id: book.id,
-            name: book.name,
-            chapter_count: book.chapter_count,
-            author: book.author,
-            translator: book.translator,
-        },
-        None => return Err(Error::NotFound("Book not found".to_owned())),
-    };
+#[derive(Template)]
+#[template(path = "book.html")]
+pub struct BookAndChaptersTemplate {
+    book: NoCoverBook,
+    chapters: Vec<Chapter>,
+    rev_chapters: Vec<Chapter>,
+}
 
-    Ok(book)
+struct BookAndChaptersQuery {
+    id: i32,
+    name: String,
+    chapter_count: Option<i32>,
+    author: Option<String>,
+    translator: Option<String>,
+    chapter_id: Option<i32>,
+    chapter_name: Option<String>,
+    chapter_number: i32,
+}
+
+pub async fn book(
+    _user: User,
+    State(pool): State<PgPool>,
+    Path(book_id): Path<i32>,
+) -> Result<BookAndChaptersTemplate, Error> {
+    let response = sqlx::query_as!(
+        BookAndChaptersQuery,
+        "
+        SELECT
+            b.id id,
+            b.name name,
+            b.chapter_count chapter_count,
+            b.author author,
+            b.translator translator,
+            c.id chapter_id,
+            c.name chapter_name,
+            c.number_in_book chapter_number
+        FROM chapters c
+            LEFT JOIN books b ON b.id = c.book_id
+        WHERE b.id = $1",
+        book_id
+    )
+    .fetch_all(&pool)
+    .await?;
+
+    if response.len() > 1 {
+        let raw_book = response.first().expect("cannot get book");
+        let book = NoCoverBook {
+            id: raw_book.id,
+            name: raw_book.name.to_owned(),
+            chapter_count: raw_book.chapter_count,
+            author: raw_book.author.to_owned(),
+            translator: raw_book.translator.to_owned(),
+        };
+
+        let chapters: Vec<Chapter> = response
+            .iter()
+            .filter_map(|chapter| {
+                if chapter.chapter_id.is_some() {
+                    let name = match &chapter.chapter_name {
+                        Some(name) => name.clone(),
+                        None => "".to_owned(),
+                    };
+                    Some(Chapter {
+                        name,
+                        number: chapter.chapter_number,
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        let mut rev_chapters: Vec<Chapter> = chapters.clone();
+        rev_chapters.sort_by(|a, b| b.number.cmp(&a.number));
+
+        return Ok(BookAndChaptersTemplate {
+            book,
+            chapters,
+            rev_chapters,
+        });
+    }
+
+    Err(Error::NotFound("Book not found".to_owned()))
 }

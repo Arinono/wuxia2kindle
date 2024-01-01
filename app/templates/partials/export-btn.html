@@ -1,0 +1,105 @@
+<div
+  class="flex items-center"
+  hx-ext="response-targets"
+>
+  <div
+    id="exportBtn"
+    class="uppercase text-2xl rounded-md cursor-pointer w-fit-content px-4 py-2 select-none mr-8 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700"
+  >
+    export
+  </div>
+  <span
+    id="response"
+    class="text-green-500"
+  ></span>
+  <span
+    id="error"
+    class="text-red-500"
+  ></span>
+  <dialog
+    id="exportDialog"
+    class="px-4"
+  >
+    <div class="flex justify-end">
+      <button
+        id="cancelBtn"
+        class="text-2xl text-red-500 hover:text-red-600 active:text-red-700 focus:outline-none mt-2"
+      >
+        &times;
+      </button>
+    </div>
+    <div class="flex flex-col py-4">
+      <h2 class="text-2xl mb-8">
+        Creating an export for <strong>{{ book.name }}</strong>
+      </h2>
+      <form
+        class="flex flex-col"
+        hx-post="/export"
+        hx-target="#response"
+        hx-target-5*="#error"
+      >
+        <input
+          type="hidden"
+          name="book_id"
+          value="{{ book.id }}"
+        />
+        <label class="flex justify-between">
+          <strong>From:</strong>
+          <select
+            name="from"
+            class="ml-4"
+          >
+            {% for chapter in chapters %}
+            <option value="{{ chapter.number }}">{{ chapter.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="flex justify-between mt-4">
+          <strong>To:</strong>
+          <select
+            name="to"
+            class="ml-4"
+          >
+            {% for chapter in rev_chapters %}
+            <option value="{{ chapter.number }}">{{ chapter.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <div class="mt-8 flex justify-end w-full">
+          <button
+            class="bg-indigo-400 hover:bg-indigo-500 active:bg-indigo-600 cursor-pointer text-lg px-4 py-2 rounded-md ml-4 focus:outline-none"
+          >
+            Export
+          </button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+  <script>
+    const dialog = document.getElementById('exportDialog');
+    const exportBtn = document.getElementById('exportBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const form = document.querySelector('form');
+
+    let success = null;
+
+    let open = false;
+    function openHandler() {
+      if (dialog) {
+        if (!open) {
+          dialog.showModal();
+        } else {
+          dialog.close();
+        }
+        open = !open;
+      }
+    }
+
+    form.addEventListener('submit', (e) => {
+      openHandler();
+    });
+
+    exportBtn.addEventListener('click', openHandler);
+    cancelBtn.addEventListener('click', openHandler);
+  </script>
+</div>

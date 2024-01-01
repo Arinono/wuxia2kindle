@@ -61,6 +61,7 @@ impl ClaimsBuilder {
     }
 }
 
+#[derive(Debug)]
 pub struct JWT {
     pub name: String,
     pub payload: String,
@@ -80,12 +81,13 @@ impl JWT {
             .unwrap()
             .as_secs();
 
-        let exp = match domain.as_str() {
+        let duration = match domain.as_str() {
             // 1 day
-            "localhost" => now + 24 * 60 * 60,
+            "localhost" => 24 * 60 * 60,
             // 15 minutes
-            _ => now + 15 * 60,
+            _ => 15 * 60,
         };
+        let exp = now + duration;
 
         let claims = ClaimsBuilder::new().sub(user).exp(exp).iat(now).build();
 
@@ -100,7 +102,7 @@ impl JWT {
             name: COOKIE_NAME.to_owned(),
             payload: signed_token,
             domain,
-            max_age: Some(15 * 60),
+            max_age: Some(duration),
             expires: None,
             path: "/".to_owned(),
         }

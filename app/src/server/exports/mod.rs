@@ -9,13 +9,14 @@ use std::fmt::Display;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum Responses {
-    AddToQueue { success: bool },
     Empty,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct AddToQueue {
-    kind: ExportKinds,
+    book_id: i32,
+    from: i32,
+    to: i32,
 }
 
 impl Display for ExportKinds {

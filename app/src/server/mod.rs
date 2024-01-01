@@ -42,6 +42,8 @@ use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+const ADDRESS: &str = "0.0.0.0";
+
 #[tokio::main]
 pub async fn start(port: u16, database_url: String) {
     let domain = std::env::var("DOMAIN").expect("DOMAIN must be set");
@@ -108,8 +110,8 @@ pub async fn start(port: u16, database_url: String) {
         .layer(DefaultBodyLimit::max(5_242_880))
         .with_state(app_state);
 
-    tracing::debug!("Listening on:\nhttp://localhost:{port}");
-    axum::Server::bind(&format!("0.0.0.0:{port}").parse().unwrap())
+    tracing::debug!("Listening on:\nhttp://{ADDRESS}:{port}");
+    axum::Server::bind(&format!("{ADDRESS}:{port}").parse().unwrap())
         .serve(app.into_make_service())
         .await
         .unwrap();
