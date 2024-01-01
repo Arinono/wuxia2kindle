@@ -60,7 +60,7 @@
             name="to"
             class="ml-4"
           >
-            {% for chapter in rev_chapters %}
+            {% for chapter in reverse(chapters.clone()) %}
             <option value="{{ chapter.number }}">{{ chapter.name }}</option>
             {% endfor %}
           </select>

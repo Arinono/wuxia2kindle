@@ -15,6 +15,7 @@ struct NoCoverBook {
 
 #[derive(Clone)]
 struct Chapter {
+    id: i32,
     name: String,
     number: i32,
 }
@@ -24,9 +25,10 @@ struct Chapter {
 pub struct BookAndChaptersTemplate {
     book: NoCoverBook,
     chapters: Vec<Chapter>,
-    rev_chapters: Vec<Chapter>,
+    reverse: fn(Vec<Chapter>) -> Vec<Chapter>,
 }
 
+#[derive(Debug)]
 struct BookAndChaptersQuery {
     id: i32,
     name: String,
@@ -58,48 +60,52 @@ pub async fn book(
         FROM chapters c
             LEFT JOIN books b ON b.id = c.book_id
         WHERE b.id = $1",
-        book_id
+        book_id,
     )
     .fetch_all(&pool)
     .await?;
 
-    if response.len() > 1 {
-        let raw_book = response.first().expect("cannot get book");
-        let book = NoCoverBook {
-            id: raw_book.id,
-            name: raw_book.name.to_owned(),
-            chapter_count: raw_book.chapter_count,
-            author: raw_book.author.to_owned(),
-            translator: raw_book.translator.to_owned(),
-        };
-
-        let chapters: Vec<Chapter> = response
-            .iter()
-            .filter_map(|chapter| {
-                if chapter.chapter_id.is_some() {
-                    let name = match &chapter.chapter_name {
-                        Some(name) => name.clone(),
-                        None => "".to_owned(),
-                    };
-                    Some(Chapter {
-                        name,
-                        number: chapter.chapter_number,
-                    })
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        let mut rev_chapters: Vec<Chapter> = chapters.clone();
-        rev_chapters.sort_by(|a, b| b.number.cmp(&a.number));
-
-        return Ok(BookAndChaptersTemplate {
-            book,
-            chapters,
-            rev_chapters,
-        });
+    if response.is_empty() {
+        return Err(Error::NotFound("Book not found".to_owned()));
     }
 
-    Err(Error::NotFound("Book not found".to_owned()))
+    let raw_book = response.first().expect("cannot get book");
+    let book = NoCoverBook {
+        id: raw_book.id,
+        name: raw_book.name.to_owned(),
+        chapter_count: raw_book.chapter_count,
+        author: raw_book.author.to_owned(),
+        translator: raw_book.translator.to_owned(),
+    };
+
+    let chapters: Vec<Chapter> = response
+        .iter()
+        .filter_map(|chapter| {
+            if chapter.chapter_id.is_some() {
+                let name = match &chapter.chapter_name {
+                    Some(name) => name.clone(),
+                    None => "".to_owned(),
+                };
+                Some(Chapter {
+                    id: chapter.chapter_id.expect("cannot get chapter id"),
+                    name,
+                    number: chapter.chapter_number,
+                })
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    let reverse = |chapters: Vec<Chapter>| {
+        let mut rev_chapters = chapters.clone();
+        rev_chapters.sort_by(|a, b| b.number.cmp(&a.number));
+        rev_chapters
+    };
+
+    Ok(BookAndChaptersTemplate {
+        book,
+        chapters,
+        reverse,
+    })
 }

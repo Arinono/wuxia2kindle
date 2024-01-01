@@ -42,17 +42,56 @@
     </div>
 
     <div class="mt-4">
-      <h2 class="text-5xl mt-8 mb-4 mr-8">Chapters
-        <span class="ml-2">
-          {% match book.chapter_count %}
-            {% when Some with (count) %}
-              ({{ count }})
-            {% when None %}
-              (0)
-          {% endmatch %}
-        <span>
-      </h2>
+      <div class="flex flex-row items-center">
+        <h2 class="text-5xl mt-8 mb-4 mr-8">Chapters
+          <span class="ml-2 text-3xl">
+            {% match book.chapter_count %}
+              {% when Some with (count) %}
+                ({{ count }})
+              {% when None %}
+                (0)
+            {% endmatch %}
+          </span>
+        </h2>
+        <div
+          id="descBtn"
+          class='text-4xl mt-6 cursor-pointer select-none'
+          onClick="toggleAsc()"></div>
+      </div>
+      <ul id="chapterList" class='overflow-y-auto grid grid-cols-2'>
+        {% for chapter in chapters %}
+          <li>
+            <a href="/chapter/{{ chapter.id }}">
+              <strong>({{ chapter.number }})</strong> {{ chapter.name }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+      <ul id="reverseChapterList" class='hidden overflow-y-auto grid grid-cols-2'>
+        {% for chapter in reverse(chapters.clone()) %}
+          <li>
+            <a href="/chapter/{{ chapter.id }}">
+              <strong>({{ chapter.number }})</strong> {{ chapter.name }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
     </div>
   </div>
+  <script>
+    const chapterList = document.getElementById('chapterList');
+    const reverseChapterList = document.getElementById('reverseChapterList');
+    const descBtn = document.getElementById('descBtn');
+    let desc = false;
+
+    function toggleAsc() {
+      desc = !desc;
+      descBtn.innerText = desc ? "⬆️ " : "⬇️ ";
+      chapterList.classList.toggle('hidden');
+      reverseChapterList.classList.toggle('hidden');
+    }
+
+    descBtn.innerText = "⬇️ ";
+  </script>
 </main>
 {% endblock %}
