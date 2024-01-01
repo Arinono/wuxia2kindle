@@ -66,6 +66,7 @@ pub async fn start(port: u16, database_url: String) {
         .route("/books", get(pages::partials::books::books))
         .route("/book/:id", get(pages::book::book))
         .route("/book/:id/cover", get(pages::partials::cover::cover))
+        .route("/chapter/:id", get(pages::chapter::chapter))
         
         // misc
         .route("/health", get(health))
@@ -76,7 +77,7 @@ pub async fn start(port: u16, database_url: String) {
         // new
         // legacy
         .route("/chapter", post(add_chapter))
-        .route("/chapter/:id", get(get_chapter))
+        // .route("/chapter/:id", get(get_chapter))
         // .route("/books", get(get_books))
         // .route("/book/:id", get(get_book).patch(update_book))
         .route("/book/:id/chapters", get(get_chapters))

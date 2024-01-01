@@ -1,0 +1,16 @@
+{% extends "authenticated.html" %}
+
+{% block title %}
+{{ name }} {% call super() %}
+{% endblock %}
+
+{% block content %}
+{% call super() %}
+
+<div class="m-8">
+  <h1>{{ name }}</h1>
+
+  <div class="mt-8 flex flex-col overflow-y-auto">{{ content|safe }}</div>
+</div>
+
+{% endblock %}
