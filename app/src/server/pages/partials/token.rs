@@ -14,12 +14,16 @@ pub struct GetTokenTemplate {
 
 pub async fn get_token(user: User, State(pool): State<PgPool>) -> Result<GetTokenTemplate, Error> {
     let thread_rng = rand::thread_rng();
+    let salt = std::env::var("SALT").expect("SALT must be set");
     let mut token: String = thread_rng
         .sample_iter(&Alphanumeric)
         .take(64)
         .map(char::from)
         .collect();
     token = token.to_uppercase();
+
+    let user_token = token.clone();
+    token.push_str(&salt);
 
     let hashed = hash(&token, DEFAULT_COST)?;
 
@@ -34,7 +38,7 @@ pub async fn get_token(user: User, State(pool): State<PgPool>) -> Result<GetToke
         },
         Ok(_) => {
             Ok(GetTokenTemplate {
-                token,
+                token: user_token,
             })
         },
     }

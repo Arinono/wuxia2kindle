@@ -33,6 +33,7 @@ fn main() {
         Commands::Server => {
             std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
             std::env::var("DOMAIN").expect("DOMAIN must be set");
+            std::env::var("SALT").expect("SALT must be set");
 
             let env_port = std::env::var("PORT").unwrap_or("3000".to_owned());
             let env_db_url = std::env::var("DATABASE_URL")
