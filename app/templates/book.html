@@ -18,7 +18,7 @@
       </div>
       <div class="flex flex-col justify-between">
         <div class="flex flex-col">
-          <h1 class="text-6xl mb-4">{{ book.name }}</h1>
+          <h1 class="font-bold mb-4">{{ book.name }}</h1>
           <span><strong>Written by:</strong>
             {% match book.author %}
               {% when Some with (author) %}
@@ -43,7 +43,7 @@
 
     <div class="mt-4">
       <div class="flex flex-row items-center">
-        <h2 class="text-5xl mt-8 mb-4 mr-8">Chapters
+        <h2 class="mt-8 mb-4 mr-8">Chapters
           <span class="ml-2 text-3xl">
             {% match book.chapter_count %}
               {% when Some with (count) %}

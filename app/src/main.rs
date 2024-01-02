@@ -2,8 +2,11 @@ mod pool;
 mod server;
 mod worker;
 
+use std::fmt::Write;
+
 use clap::{Parser, Subcommand};
 use lettre::{transport::smtp::authentication::Credentials, SmtpTransport};
+use sha2::{Digest, Sha384};
 
 #[derive(Debug, Parser)]
 #[command(name = "wuxia2kindle")]
@@ -17,6 +20,10 @@ enum Commands {
     #[command(arg_required_else_help = false)]
     Server,
     Worker,
+    Checksum {
+        #[clap(short, long)]
+        file: String,
+    },
 }
 
 fn main() {
@@ -60,5 +67,19 @@ fn main() {
 
             worker::start(env_db_url, mailer, env_smtp_user, env_send_to);
         }
+        Commands::Checksum { file } => {
+            let file = std::fs::read(file).expect("Failed to read file");
+            let checksum = Vec::from(Sha384::digest(file).as_slice());
+
+            println!("{}", short_checksum(&checksum));
+        }
     }
+}
+
+fn short_checksum(checksum: &[u8]) -> String {
+    let mut s = String::with_capacity(checksum.len() * 2);
+    for b in checksum {
+        write!(&mut s, "{b:02x?}").expect("should not fail to write to str");
+    }
+    s
 }

@@ -67,6 +67,8 @@ pub async fn start(port: u16, database_url: String) {
         .route("/book/:id", get(pages::book::book))
         .route("/book/:id/cover", get(pages::partials::cover::cover))
         .route("/chapter/:id", get(pages::chapter::chapter))
+        .route("/settings", get(pages::settings::settings))
+        .route("/token", get(pages::partials::token::get_token))
         
         // misc
         .route("/health", get(health))
@@ -82,6 +84,7 @@ pub async fn start(port: u16, database_url: String) {
         // .route("/book/:id", get(get_book).patch(update_book))
         .route("/book/:id/chapters", get(get_chapters))
         .route("/export", post(add_to_queue))
+        .route("/*catchall", get(not_found))
         .layer(
             CorsLayer::new()
                 .allow_credentials(true)
@@ -116,6 +119,10 @@ pub async fn start(port: u16, database_url: String) {
         .serve(app.into_make_service())
         .await
         .unwrap();
+}
+
+async fn not_found() -> Result<Html<String>, Error> {
+    Err(Error::NotFound("Page not found".to_string()))
 }
 
 #[derive(Clone)]
