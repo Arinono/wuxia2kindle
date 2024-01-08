@@ -1,5 +1,5 @@
 ingest:
-	./app ingest
+	./app server
 
 worker:
 	./app worker
