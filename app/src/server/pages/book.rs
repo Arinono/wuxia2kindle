@@ -59,7 +59,8 @@ pub async fn book(
             c.number_in_book chapter_number
         FROM chapters c
             LEFT JOIN books b ON b.id = c.book_id
-        WHERE b.id = $1",
+        WHERE b.id = $1
+        ORDER BY c.number_in_book ASC",
         book_id,
     )
     .fetch_all(&pool)

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            b.id id,\n            b.name name,\n            b.chapter_count chapter_count,\n            b.author author,\n            b.translator translator,\n            c.id chapter_id,\n            c.name chapter_name,\n            c.number_in_book chapter_number\n        FROM chapters c\n            LEFT JOIN books b ON b.id = c.book_id\n        WHERE b.id = $1",
+  "query": "\n        SELECT\n            b.id id,\n            b.name name,\n            b.chapter_count chapter_count,\n            b.author author,\n            b.translator translator,\n            c.id chapter_id,\n            c.name chapter_name,\n            c.number_in_book chapter_number\n        FROM chapters c\n            LEFT JOIN books b ON b.id = c.book_id\n        WHERE b.id = $1\n        ORDER BY c.number_in_book ASC",
   "describe": {
     "columns": [
       {
@@ -60,5 +60,5 @@
       false
     ]
   },
-  "hash": "4dc8da6481b7cb93b67ab9934e38346b13fe7c7423ca35ff8acf36d7eabebd86"
+  "hash": "b2dbbcc9dcd004881d451eebc9edf5757603fc113f28a2d4a53bbe784532078d"
 }
