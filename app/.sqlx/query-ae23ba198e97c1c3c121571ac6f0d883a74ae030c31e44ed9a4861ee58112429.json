@@ -22,6 +22,11 @@
         "ordinal": 3,
         "name": "avatar",
         "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "token",
+        "type_info": "Varchar"
       }
     ],
     "parameters": {
@@ -32,6 +37,7 @@
     "nullable": [
       false,
       false,
+      true,
       true,
       true
     ]
