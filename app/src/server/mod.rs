@@ -6,17 +6,8 @@ pub mod health;
 pub mod pages;
 
 use self::{
-    auth::{
-        callback::login_callback, cookie::get_cookie, logout::logout, user::User,
-    },
-    books::{
-        get::{get_book, get_books},
-        update::update_book,
-    },
-    chapters::{
-        add::add_chapter,
-        get::{get_chapter, get_chapters},
-    },
+    auth::{callback::login_callback, cookie::get_cookie, logout::logout, user::User},
+    chapters::{add::add_chapter, get::get_chapters},
     exports::add::add_to_queue,
     health::health,
 };
@@ -24,16 +15,17 @@ use super::pool;
 use askama::Template;
 use axum::{
     async_trait,
+    body::{self, Empty},
     error_handling::HandleErrorLayer,
     extract::{DefaultBodyLimit, FromRef, FromRequestParts},
     http::{
         header::{self},
         request::Parts,
-        HeaderMap, HeaderValue, Method, StatusCode, Response,
+        HeaderMap, HeaderValue, Method, Response, StatusCode,
     },
-    response::{IntoResponse, Redirect, Html},
+    response::{Html, IntoResponse, Redirect},
     routing::{get, post},
-    Router, body::{self, Empty},
+    Router,
 };
 use sqlx::PgPool;
 use std::time::Duration;
@@ -69,7 +61,6 @@ pub async fn start(port: u16, database_url: String) {
         .route("/chapter/:id", get(pages::chapter::chapter))
         .route("/settings", get(pages::settings::settings))
         .route("/token", get(pages::partials::token::get_token))
-        
         // misc
         .route("/health", get(health))
         // auth
@@ -161,28 +152,20 @@ impl IntoResponse for Error {
     fn into_response(self) -> askama_axum::Response {
         match self {
             Self::NotFound(message) => {
-                let body = NotFoundTemplate {
-                    message,
-                }
-                .render()
-                .unwrap();
+                let body = NotFoundTemplate { message }.render().unwrap();
 
                 (StatusCode::NOT_FOUND, Html(body)).into_response()
-            },
-            Self::UserAlreadyLoggedIn => {
-                Response::builder()
-                    .status(StatusCode::FOUND)
-                    .header("Location", "/")
-                    .body(body::boxed(Empty::new()))
-                    .unwrap()
-            },
-            Self::Unauthenticated => {
-                Response::builder()
-                    .status(StatusCode::FOUND)
-                    .header("Location", "/login")
-                    .body(body::boxed(Empty::new()))
-                    .unwrap()
-            },
+            }
+            Self::UserAlreadyLoggedIn => Response::builder()
+                .status(StatusCode::FOUND)
+                .header("Location", "/")
+                .body(body::boxed(Empty::new()))
+                .unwrap(),
+            Self::Unauthenticated => Response::builder()
+                .status(StatusCode::FOUND)
+                .header("Location", "/login")
+                .body(body::boxed(Empty::new()))
+                .unwrap(),
             Self::AppError(e) => {
                 tracing::error!("Application error: {:#}", e);
                 let body = AppErrorTemplate {
@@ -192,10 +175,8 @@ impl IntoResponse for Error {
                 .unwrap();
 
                 (StatusCode::INTERNAL_SERVER_ERROR, Html(body)).into_response()
-            },
-            Self::AuthRedirect => {
-                Redirect::temporary("/login").into_response()
-            },
+            }
+            Self::AuthRedirect => Redirect::temporary("/login").into_response(),
         }
     }
 }
@@ -225,7 +206,9 @@ where
         let mut headers = HeaderMap::new();
         headers.insert("cookie", header.clone());
 
-        let user = get_cookie(&headers, &pool).await.ok_or(Error::AuthRedirect)?;
+        let user = get_cookie(&headers, &pool)
+            .await
+            .ok_or(Error::AuthRedirect)?;
 
         Ok(user)
     }

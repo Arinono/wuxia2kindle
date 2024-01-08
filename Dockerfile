@@ -16,17 +16,8 @@ RUN apt-get update && apt install -y openssl ca-certificates curl unzip parallel
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-RUN curl -fsSL https://deno.land/x/install/install.sh | bash; \
-  /root/.deno/bin/deno upgrade --version 1.37.1
-
-ENV PATH=${PATH}:/root/.deno/bin
-
-WORKDIR /client
-
-COPY client .
-
 WORKDIR /
 
 COPY Makefile .
 
-CMD parallel --linebuffer --halt now,success=1,fail=1 make ::: ingest worker web
+CMD parallel --linebuffer --halt now,success=1,fail=1 make ::: ingest worker

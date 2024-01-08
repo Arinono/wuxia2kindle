@@ -7,6 +7,7 @@ use sqlx::PgPool;
 
 use super::{Book, UpdateBook};
 
+#[allow(dead_code)]
 #[debug_handler]
 pub async fn update_book(
     State(pool): State<PgPool>,

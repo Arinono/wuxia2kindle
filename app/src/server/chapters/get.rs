@@ -24,6 +24,7 @@ pub async fn get_chapters(State(pool): State<PgPool>, Path(id): Path<i32>) -> im
     (StatusCode::OK, Json(GetChapters { data: chapters }))
 }
 
+#[allow(dead_code)]
 pub async fn get_chapter(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl IntoResponse {
     let chapter = sqlx::query_as!(Chapter, "SELECT * FROM chapters WHERE id = $1", id)
         .fetch_optional(&pool)
