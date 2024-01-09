@@ -52,6 +52,7 @@ fn main() {
             let env_smtp_password =
                 std::env::var("SMTP_PASSWORD").expect("SMTP_PASSWORD must be set");
             let env_send_to = std::env::var("SEND_TO").expect("SEND_TO must be set");
+            let env_from = std::env::var("FROM").expect("FROM must be set");
 
             let port = env_smtp_port
                 .parse::<u16>()
@@ -66,7 +67,7 @@ fn main() {
 
             mailer.test_connection().unwrap();
 
-            worker::start(env_db_url, mailer, env_smtp_user, env_send_to);
+            worker::start(env_db_url, mailer, env_send_to, env_from);
         }
         Commands::Checksum { file } => {
             let file = std::fs::read(file).expect("Failed to read file");

@@ -93,7 +93,7 @@ impl Epub {
 
         let temp_dir = std::env::temp_dir();
         let filename = format!("{}.epub", Uuid::new_v4());
-        let filepath = format!("{}{filename}", temp_dir.display());
+        let filepath = format!("{}/{filename}", temp_dir.display());
 
         let mut fd = File::create(&filepath).unwrap();
 

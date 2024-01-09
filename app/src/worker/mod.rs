@@ -20,17 +20,30 @@ use super::{
 };
 
 #[tokio::main]
-pub async fn start(database_url: String, mailer: SmtpTransport, user: String, send_to: String) {
+pub async fn start(
+    database_url: String,
+    mailer: SmtpTransport,
+    send_to: String,
+    from: String,
+) {
     let mut interval = interval(Duration::from_secs(60));
 
     loop {
         interval.tick().await;
         let pool = pool::mk_pool(database_url.clone()).await;
-        export(pool, &mailer, &user, &send_to).await.close().await;
+        export(pool, &mailer, &send_to, &from)
+            .await
+            .close()
+            .await;
     }
 }
 
-async fn export(pool: PgPool, mailer: &SmtpTransport, user: &String, send_to: &String) -> PgPool {
+async fn export(
+    pool: PgPool,
+    mailer: &SmtpTransport,
+    send_to: &String,
+    from: &String,
+) -> PgPool {
     let exports: Vec<Export> = {
         sqlx::query_as!(
             Export,
@@ -78,7 +91,7 @@ async fn export(pool: PgPool, mailer: &SmtpTransport, user: &String, send_to: &S
                 .await
                 .unwrap();
 
-                let from = format!("Wuxia2Kindle <{}>", user);
+                let from = format!("Wuxia2Kindle <{}>", from);
                 let filebody = std::fs::read(&path).unwrap();
                 let content_type = ContentType::parse("application/epub+zip").unwrap();
                 let attachement =
