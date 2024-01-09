@@ -1,5 +1,5 @@
-mod styles;
 mod html;
+mod styles;
 
 use std::fs::File;
 
@@ -10,8 +10,8 @@ use epub_builder::{EpubBuilder, EpubContent, EpubVersion, ReferenceType, ZipLibr
 use uuid::Uuid;
 
 use self::{
-    styles::{stylesheet, custom_styles},
     html::wrap_html,
+    styles::{custom_styles, stylesheet},
 };
 
 #[derive(Debug)]
@@ -92,8 +92,18 @@ impl Epub {
         }
 
         let temp_dir = std::env::temp_dir();
-        let filename = format!("{}.epub", Uuid::new_v4());
-        let filepath = format!("{}/{filename}", temp_dir.display());
+        let cleaned_title = self
+            .title
+            .split_ascii_whitespace()
+            .collect::<Vec<&str>>()
+            .join("_");
+        let filename = format!("{}-{}.epub", cleaned_title, Uuid::new_v4());
+        let temp_dir_str = temp_dir
+            .display()
+            .to_string()
+            .trim_end_matches('/')
+            .to_string();
+        let filepath = format!("{}/{filename}", temp_dir_str);
 
         let mut fd = File::create(&filepath).unwrap();
 
@@ -102,5 +112,3 @@ impl Epub {
         Ok(filepath)
     }
 }
-
-
