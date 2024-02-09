@@ -201,15 +201,67 @@ where
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let pool = PgPool::from_ref(state);
-        let header = parts.headers.get("cookie").ok_or(Error::AuthRedirect)?;
+        let cookie_header = parts.headers.get("cookie");
 
-        let mut headers = HeaderMap::new();
-        headers.insert("cookie", header.clone());
+        match cookie_header {
+            Some(header) => {
+                let mut headers = HeaderMap::new();
+                headers.insert("cookie", header.clone());
 
-        let user = get_cookie(&headers, &pool)
-            .await
-            .ok_or(Error::AuthRedirect)?;
+                let user = get_cookie(&headers, &pool)
+                    .await
+                    .ok_or(Error::AuthRedirect)?;
 
-        Ok(user)
+                Ok(user)
+            }
+            None => {
+                let bearer_header = parts
+                    .headers
+                    .get("authorization")
+                    .ok_or(Error::Unauthenticated)?;
+                let bearer = bearer_header.to_str().map_err(|_| Error::Unauthenticated)?;
+                let token = bearer
+                    .strip_prefix("Bearer ")
+                    .ok_or(Error::Unauthenticated)?;
+                let username = parts
+                    .headers
+                    .get("x-username")
+                    .ok_or(Error::Unauthenticated)?
+                    .to_str()
+                    .map_err(|_| Error::Unauthenticated)?;
+
+                let user = sqlx::query_as!(
+                    User,
+                    "SELECT * FROM users WHERE username = $1 LIMIT 1",
+                    username,
+                )
+                .fetch_optional(&pool)
+                .await
+                .unwrap();
+
+                if user.is_none() {
+                    return Err(Error::Unauthenticated);
+                }
+                let some_user = user.clone().unwrap();
+
+                let hashed = some_user.token.clone().ok_or(Error::Unauthenticated)?;
+
+                let is_token_valid = bcrypt::verify(token, &hashed);
+
+                match is_token_valid {
+                    Ok(true) => Ok(some_user),
+                    _ => Err(Error::Unauthenticated),
+                }
+            }
+        }
+
+        // let mut headers = HeaderMap::new();
+        // headers.insert("cookie", header.clone());
+        //
+        // let user = get_cookie(&headers, &pool)
+        //     .await
+        //     .ok_or(Error::AuthRedirect)?;
+        //
+        // Ok(user)
     }
 }

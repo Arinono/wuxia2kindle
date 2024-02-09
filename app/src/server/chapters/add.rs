@@ -1,6 +1,8 @@
 use axum::{debug_handler, extract::State, Json, response::IntoResponse, http::StatusCode};
 use sqlx::PgPool;
 
+use crate::server::auth::user::User;
+
 use super::{
     AddChapter,
     Responses,
@@ -9,6 +11,7 @@ use super::{
 
 #[debug_handler]
 pub async fn add_chapter(
+    _user: Option<User>,
     State(pool): State<PgPool>,
     Json(input): Json<AddChapter>,
 ) -> impl IntoResponse {
