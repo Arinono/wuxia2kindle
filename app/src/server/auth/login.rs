@@ -1,7 +1,8 @@
 use axum::{
+    debug_handler,
     extract::Path,
     http::StatusCode,
-    response::{IntoResponse, Response}, debug_handler,
+    response::{IntoResponse, Response},
 };
 
 use super::{discord::DiscordAuth, oauth::Service};

@@ -1,13 +1,9 @@
-use axum::{debug_handler, extract::State, Json, response::IntoResponse, http::StatusCode};
+use axum::{debug_handler, extract::State, http::StatusCode, response::IntoResponse, Json};
 use sqlx::PgPool;
 
 use crate::server::auth::user::User;
 
-use super::{
-    AddChapter,
-    Responses,
-    super::books::Book,
-};
+use super::{super::books::Book, AddChapter, Responses};
 
 #[debug_handler]
 pub async fn add_chapter(
@@ -84,5 +80,3 @@ pub async fn add_chapter(
         Json(Responses::AddChapter { success: true }),
     )
 }
-
-

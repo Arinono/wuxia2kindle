@@ -1,5 +1,7 @@
 mod epub;
 
+use std::time::Duration;
+
 use epub::Epub;
 
 use lettre::{
@@ -7,7 +9,6 @@ use lettre::{
     Message, SmtpTransport, Transport,
 };
 use sqlx::PgPool;
-use std::time::Duration;
 use tokio::time::interval;
 
 use super::{
@@ -20,13 +21,8 @@ use super::{
 };
 
 #[tokio::main]
-pub async fn start(
-    database_url: String,
-    mailer: SmtpTransport,
-    send_to: String,
-    from: String,
-) {
-    let mut interval = interval(Duration::from_secs(60));
+pub async fn start(database_url: String, mailer: SmtpTransport, send_to: String, from: String) {
+    let mut interval = interval(Duration::from_secs(60 * 60 * 6));
 
     loop {
         interval.tick().await;
@@ -38,12 +34,7 @@ pub async fn start(
     }
 }
 
-async fn export(
-    pool: PgPool,
-    mailer: &SmtpTransport,
-    send_to: &String,
-    from: &String,
-) -> PgPool {
+async fn export(pool: PgPool, mailer: &SmtpTransport, send_to: &String, from: &String) -> PgPool {
     let exports: Vec<Export> = {
         sqlx::query_as!(
             Export,
@@ -55,7 +46,7 @@ async fn export(
     };
     println!("Processing {} exports", exports.len());
 
-    for export in exports.into_iter() {
+    for export in exports.clone().into_iter() {
         sqlx::query!(
             "UPDATE exports 
             SET processing_started_at = CURRENT_TIMESTAMP
@@ -65,7 +56,9 @@ async fn export(
         .execute(&pool)
         .await
         .unwrap();
+    }
 
+    for export in exports.into_iter() {
         match process(export.clone(), &pool).await {
             Err(err) => {
                 sqlx::query!(

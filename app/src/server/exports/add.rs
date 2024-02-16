@@ -26,7 +26,13 @@ pub async fn add_to_queue(
     .execute(&pool)
     .await
     {
-        Ok(_) => (StatusCode::CREATED, Html("Export added to queue")),
+        Ok(_) => {
+            let url = std::env::var("WORKER_URL");
+            if url.is_ok() {
+                reqwest::get(format!("{}/ping", url.unwrap())).await.unwrap();
+            }
+            (StatusCode::CREATED, Html("Export added to queue"))
+        }
         Err(e) => {
             eprintln!("Error adding export to queue: {}", e);
             return (

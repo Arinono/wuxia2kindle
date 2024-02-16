@@ -377,4 +377,3 @@ pub fn stylesheet() -> &'static str {
     /*==eBook Specific Formatting Below Here==*/
     "###
 }
-

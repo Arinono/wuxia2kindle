@@ -1,25 +1,13 @@
-<div
-  class="flex items-center"
-  hx-ext="response-targets"
->
+<div class="flex items-center" hx-ext="response-targets">
   <div
     id="exportBtn"
     class="uppercase text-2xl rounded-md cursor-pointer w-fit-content px-4 py-2 select-none mr-8 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700"
   >
     export
   </div>
-  <span
-    id="response"
-    class="text-green-500"
-  ></span>
-  <span
-    id="error"
-    class="text-red-500"
-  ></span>
-  <dialog
-    id="exportDialog"
-    class="px-4"
-  >
+  <span id="response" class="text-green-500"></span>
+  <span id="error" class="text-red-500"></span>
+  <dialog id="exportDialog" class="px-4">
     <div class="flex justify-end">
       <button
         id="cancelBtn"
@@ -38,17 +26,10 @@
         hx-target="#response"
         hx-target-5*="#error"
       >
-        <input
-          type="hidden"
-          name="book_id"
-          value="{{ book.id }}"
-        />
+        <input type="hidden" name="book_id" value="{{ book.id }}" />
         <label class="flex justify-between">
           <strong>From:</strong>
-          <select
-            name="from"
-            class="ml-4"
-          >
+          <select name="from" class="ml-4">
             {% for chapter in chapters %}
             <option value="{{ chapter.number }}">{{ chapter.name }}</option>
             {% endfor %}
@@ -56,10 +37,7 @@
         </label>
         <label class="flex justify-between mt-4">
           <strong>To:</strong>
-          <select
-            name="to"
-            class="ml-4"
-          >
+          <select name="to" class="ml-4">
             {% for chapter in reverse(chapters.clone()) %}
             <option value="{{ chapter.number }}">{{ chapter.name }}</option>
             {% endfor %}
@@ -76,10 +54,10 @@
     </div>
   </dialog>
   <script>
-    const dialog = document.getElementById('exportDialog');
-    const exportBtn = document.getElementById('exportBtn');
-    const cancelBtn = document.getElementById('cancelBtn');
-    const form = document.querySelector('form');
+    const dialog = document.getElementById("exportDialog");
+    const exportBtn = document.getElementById("exportBtn");
+    const cancelBtn = document.getElementById("cancelBtn");
+    const form = document.querySelector("form");
 
     let success = null;
 
@@ -95,11 +73,11 @@
       }
     }
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener("submit", (e) => {
       openHandler();
     });
 
-    exportBtn.addEventListener('click', openHandler);
-    cancelBtn.addEventListener('click', openHandler);
+    exportBtn.addEventListener("click", openHandler);
+    cancelBtn.addEventListener("click", openHandler);
   </script>
 </div>

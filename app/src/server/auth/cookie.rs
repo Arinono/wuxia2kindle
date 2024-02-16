@@ -3,10 +3,7 @@ use std::collections::HashMap;
 use axum::http::HeaderMap;
 use sqlx::PgPool;
 
-use super::{
-    user::User,
-    jwt::JWT,
-};
+use super::{jwt::JWT, user::User};
 
 pub static COOKIE_NAME: &str = "wuxia2kindle_session";
 

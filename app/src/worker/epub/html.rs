@@ -10,5 +10,3 @@ pub fn wrap_html(content: String) -> String {
         content
     )
 }
-
-

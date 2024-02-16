@@ -1,11 +1,15 @@
 use axum::{
+    debug_handler,
     extract::{Path, State},
+    http::StatusCode,
     response::{IntoResponse, Json},
-    http::StatusCode, debug_handler,
 };
 use sqlx::PgPool;
 
-use super::{Book, Responses::{GetBook, GetBooks, Empty}};
+use super::{
+    Book,
+    Responses::{Empty, GetBook, GetBooks},
+};
 
 #[allow(dead_code)]
 #[debug_handler]

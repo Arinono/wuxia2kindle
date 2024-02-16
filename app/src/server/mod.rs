@@ -19,22 +19,19 @@ use axum::{
     error_handling::HandleErrorLayer,
     extract::{DefaultBodyLimit, FromRef, FromRequestParts},
     http::{
-        header::{self},
-        request::Parts,
-        HeaderMap, HeaderValue, Method, Response, StatusCode,
+        header, request::Parts, HeaderMap, HeaderName, HeaderValue, Method, Response, StatusCode,
     },
     response::{Html, IntoResponse, Redirect},
     routing::{get, post},
     Router,
 };
 use sqlx::PgPool;
-use std::time::Duration;
+use std::{net::SocketAddr, time::Duration};
+use tokio::signal;
 use tower::{BoxError, ServiceBuilder};
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
-const ADDRESS: &str = "0.0.0.0";
 
 #[tokio::main]
 pub async fn start(port: u16, database_url: String) {
@@ -84,7 +81,13 @@ pub async fn start(port: u16, database_url: String) {
                     "https://www.wuxiaworld.com".parse::<HeaderValue>().unwrap(),
                 ])
                 .allow_methods([Method::GET, Method::POST, Method::OPTIONS, Method::PATCH])
-                .allow_headers(vec![header::CONTENT_TYPE, header::ACCEPT, header::COOKIE]),
+                .allow_headers(vec![
+                    header::CONTENT_TYPE,
+                    header::ACCEPT,
+                    header::COOKIE,
+                    header::AUTHORIZATION,
+                    HeaderName::from_static("x-username"),
+                ]),
         )
         .layer(
             ServiceBuilder::new()
@@ -105,11 +108,37 @@ pub async fn start(port: u16, database_url: String) {
         .layer(DefaultBodyLimit::max(5_242_880))
         .with_state(app_state);
 
-    tracing::debug!("Listening on:\nhttp://{ADDRESS}:{port}");
-    axum::Server::bind(&format!("{ADDRESS}:{port}").parse().unwrap())
+    let addr: SocketAddr = format!("[::]:{port}").parse().unwrap();
+    tracing::debug!("Listening on:\n{addr}");
+    axum::Server::bind(&addr)
         .serve(app.into_make_service())
+        .with_graceful_shutdown(shutdown_signal())
         .await
         .unwrap();
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
 }
 
 async fn not_found() -> Result<Html<String>, Error> {

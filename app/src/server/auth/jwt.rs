@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use jsonwebtoken::{encode, Header, EncodingKey, Validation, decode, DecodingKey};
-use serde::{Serialize, Deserialize};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use serde::{Deserialize, Serialize};
 
 use self::super::super::Error;
 

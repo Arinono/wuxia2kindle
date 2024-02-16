@@ -1,7 +1,8 @@
 use axum::{
-    extract::{Path, State, Json},
+    debug_handler,
+    extract::{Json, Path, State},
+    http::StatusCode,
     response::IntoResponse,
-    http::StatusCode, debug_handler,
 };
 use sqlx::PgPool;
 
@@ -47,4 +48,3 @@ pub async fn update_book(
 
     (StatusCode::NOT_FOUND, ())
 }
-

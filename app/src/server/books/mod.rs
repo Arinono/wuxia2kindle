@@ -23,5 +23,5 @@ pub struct UpdateBook {
 pub enum Responses {
     GetBook { data: Book },
     GetBooks { data: Vec<Book> },
-    Empty
+    Empty,
 }

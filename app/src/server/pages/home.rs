@@ -12,5 +12,5 @@ pub async fn home(user: Option<User>) -> Result<HomeTemplate, Error> {
         return Err(Error::Unauthenticated);
     }
 
-    Ok(HomeTemplate { })
+    Ok(HomeTemplate {})
 }

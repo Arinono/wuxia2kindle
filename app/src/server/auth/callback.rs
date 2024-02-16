@@ -1,20 +1,15 @@
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use axum::{
+    debug_handler,
     extract::{Path, Query, State},
     http::HeaderMap,
-    response::{IntoResponse, Html}, debug_handler,
+    response::{Html, IntoResponse},
 };
 use reqwest::header::SET_COOKIE;
 use serde::Deserialize;
 use sqlx::PgPool;
 
-use super::{
-    jwt::JWT,
-    oauth::Service,
-    user::User,
-    discord::DiscordAuth,
-    super::Error,
-};
+use super::{super::Error, discord::DiscordAuth, jwt::JWT, oauth::Service, user::User};
 
 #[derive(Debug, Deserialize)]
 pub struct CallbackQueryParam {
@@ -65,7 +60,9 @@ pub async fn login_callback(
             "UPDATE users SET avatar = $1 WHERE id = $2",
             user.avatar,
             db_user.as_ref().unwrap().id,
-        ).execute(&pool).await?;
+        )
+        .execute(&pool)
+        .await?;
     }
 
     let jwt = JWT::new(db_user.unwrap().id.to_string());
