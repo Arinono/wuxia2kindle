@@ -7,7 +7,7 @@ use super::{super::books::Book, AddChapter, Responses};
 
 #[debug_handler]
 pub async fn add_chapter(
-    _user: Option<User>,
+    _user: User,
     State(pool): State<PgPool>,
     Json(input): Json<AddChapter>,
 ) -> impl IntoResponse {

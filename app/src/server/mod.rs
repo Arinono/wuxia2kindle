@@ -191,8 +191,7 @@ impl IntoResponse for Error {
                 .body(body::boxed(Empty::new()))
                 .unwrap(),
             Self::Unauthenticated => Response::builder()
-                .status(StatusCode::FOUND)
-                .header("Location", "/login")
+                .status(StatusCode::UNAUTHORIZED)
                 .body(body::boxed(Empty::new()))
                 .unwrap(),
             Self::AppError(e) => {
@@ -259,38 +258,26 @@ where
                     .to_str()
                     .map_err(|_| Error::Unauthenticated)?;
 
-                let user = sqlx::query_as!(
+                let db_user = sqlx::query_as!(
                     User,
                     "SELECT * FROM users WHERE username = $1 LIMIT 1",
                     username,
                 )
                 .fetch_optional(&pool)
                 .await
-                .unwrap();
+                .expect("Failed to fetch user");
 
-                if user.is_none() {
-                    return Err(Error::Unauthenticated);
-                }
-                let some_user = user.clone().unwrap();
+                let user = db_user.ok_or(Error::Unauthenticated)?;
 
-                let hashed = some_user.token.clone().ok_or(Error::Unauthenticated)?;
+                let hashed = user.token.clone().ok_or(Error::Unauthenticated)?;
 
                 let is_token_valid = bcrypt::verify(token, &hashed);
 
                 match is_token_valid {
-                    Ok(true) => Ok(some_user),
+                    Ok(true) => Ok(user),
                     _ => Err(Error::Unauthenticated),
                 }
             }
         }
-
-        // let mut headers = HeaderMap::new();
-        // headers.insert("cookie", header.clone());
-        //
-        // let user = get_cookie(&headers, &pool)
-        //     .await
-        //     .ok_or(Error::AuthRedirect)?;
-        //
-        // Ok(user)
     }
 }
