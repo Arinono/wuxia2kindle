@@ -184,7 +184,7 @@ impl IntoResponse for Error {
                 let body = NotFoundTemplate { message }.render().unwrap();
 
                 (StatusCode::NOT_FOUND, Html(body)).into_response()
-            }
+            },
             Self::UserAlreadyLoggedIn => Response::builder()
                 .status(StatusCode::FOUND)
                 .header("Location", "/")
@@ -203,7 +203,7 @@ impl IntoResponse for Error {
                 .unwrap();
 
                 (StatusCode::INTERNAL_SERVER_ERROR, Html(body)).into_response()
-            }
+            },
             Self::AuthRedirect => Redirect::temporary("/login").into_response(),
         }
     }

@@ -16,20 +16,11 @@ command = ["cargo", "check", "--all-targets", "--color", "always"]
 need_stdout = false
 
 [jobs.clippy]
-command = [
-    "cargo", "clippy",
-    "--all-targets",
-    "--color", "always",
-]
+command = ["cargo", "clippy", "--all-targets", "--color", "always"]
 need_stdout = false
 
 [jobs.run]
-command = [
-    "cargo", "run",
-    "--color", "always",
-    "--",
-    "server"
-]
+command = ["just", "server"]
 need_stdout = true
 allow_warnings = true
 background = true

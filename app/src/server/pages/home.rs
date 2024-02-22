@@ -7,10 +7,6 @@ use crate::server::{auth::user::User, Error};
 #[template(path = "home.html")]
 pub struct HomeTemplate {}
 
-pub async fn home(user: Option<User>) -> Result<HomeTemplate, Error> {
-    if user.is_none() {
-        return Err(Error::Unauthenticated);
-    }
-
+pub async fn home(_user: User) -> Result<HomeTemplate, Error> {
     Ok(HomeTemplate {})
 }
