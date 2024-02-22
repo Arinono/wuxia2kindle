@@ -184,7 +184,7 @@ impl IntoResponse for Error {
                 let body = NotFoundTemplate { message }.render().unwrap();
 
                 (StatusCode::NOT_FOUND, Html(body)).into_response()
-            },
+            }
             Self::UserAlreadyLoggedIn => Response::builder()
                 .status(StatusCode::FOUND)
                 .header("Location", "/")
@@ -203,7 +203,7 @@ impl IntoResponse for Error {
                 .unwrap();
 
                 (StatusCode::INTERNAL_SERVER_ERROR, Html(body)).into_response()
-            },
+            }
             Self::AuthRedirect => Redirect::temporary("/login").into_response(),
         }
     }
@@ -243,6 +243,12 @@ where
                 Ok(user)
             }
             None => {
+                let username = parts
+                    .headers
+                    .get("x-username")
+                    .ok_or(Error::AuthRedirect)?
+                    .to_str()
+                    .map_err(|_| Error::Unauthenticated)?;
                 let bearer_header = parts
                     .headers
                     .get("authorization")
@@ -251,12 +257,6 @@ where
                 let token = bearer
                     .strip_prefix("Bearer ")
                     .ok_or(Error::Unauthenticated)?;
-                let username = parts
-                    .headers
-                    .get("x-username")
-                    .ok_or(Error::Unauthenticated)?
-                    .to_str()
-                    .map_err(|_| Error::Unauthenticated)?;
 
                 let db_user = sqlx::query_as!(
                     User,
@@ -271,7 +271,8 @@ where
 
                 let hashed = user.token.clone().ok_or(Error::Unauthenticated)?;
 
-                let is_token_valid = bcrypt::verify(token, &hashed);
+                let salt = std::env::var("SALT").expect("SALT must be set");
+                let is_token_valid = bcrypt::verify(format!("{}{}", token, salt), &hashed);
 
                 match is_token_valid {
                     Ok(true) => Ok(user),

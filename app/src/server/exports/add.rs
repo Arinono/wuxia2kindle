@@ -26,9 +26,7 @@ pub async fn add_to_queue(
     .execute(&pool)
     .await
     {
-        Ok(_) => {
-            (StatusCode::CREATED, Html("Export added to queue"))
-        }
+        Ok(_) => (StatusCode::CREATED, Html("Export added to queue")),
         Err(e) => {
             eprintln!("Error adding export to queue: {}", e);
             return (

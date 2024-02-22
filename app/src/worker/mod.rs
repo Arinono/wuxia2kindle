@@ -191,6 +191,15 @@ async fn export(pool: PgPool, webhook_url: &String) -> PgPool {
 
                 if res.status().is_success() {
                     println!("Epub sent");
+                    sqlx::query!(
+                        "UPDATE exports
+                        SET sent = true
+                        WHERE id = $1",
+                        export.id,
+                    )
+                    .execute(&pool)
+                    .await
+                    .unwrap();
                 } else {
                     println!("Epub not sent");
                 }
