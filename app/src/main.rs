@@ -5,7 +5,6 @@ mod worker;
 use std::fmt::Write;
 
 use clap::{Parser, Subcommand};
-use lettre::{transport::smtp::authentication::Credentials, SmtpTransport};
 use sha2::{Digest, Sha384};
 
 #[derive(Debug, Parser)]
@@ -46,28 +45,9 @@ fn main() {
         Commands::Worker => {
             let env_db_url = std::env::var("DATABASE_URL")
                 .unwrap_or("postgres://localhost:5432/wuxia2kindle".to_owned());
-            let env_smtp_server = std::env::var("SMTP_SERVER").expect("SMTP_SERVER must be set");
-            let env_smtp_port = std::env::var("SMTP_PORT").expect("SMTP_PORT must be set");
-            let env_smtp_user = std::env::var("SMTP_USER").expect("SMTP_USER must be set");
-            let env_smtp_password =
-                std::env::var("SMTP_PASSWORD").expect("SMTP_PASSWORD must be set");
-            let env_send_to = std::env::var("SEND_TO").expect("SEND_TO must be set");
-            let env_from = std::env::var("FROM").expect("FROM must be set");
+            let webhook_url = std::env::var("DISCORD_WEBHOOK").expect("DISCORD_WEBHOOKmust be set");
 
-            let port = env_smtp_port
-                .parse::<u16>()
-                .expect("SMTP_PORT must be a number");
-
-            let credentials = Credentials::new(env_smtp_user.clone(), env_smtp_password);
-            let mailer = SmtpTransport::starttls_relay(&env_smtp_server)
-                .unwrap()
-                .port(port)
-                .credentials(credentials)
-                .build();
-
-            mailer.test_connection().unwrap();
-
-            worker::start(env_db_url, mailer, env_send_to, env_from);
+            worker::start(env_db_url, webhook_url);
         }
         Commands::Checksum { file } => {
             let file = std::fs::read(file).expect("Failed to read file");

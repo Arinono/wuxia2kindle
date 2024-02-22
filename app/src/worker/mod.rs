@@ -4,10 +4,8 @@ use std::time::Duration;
 
 use epub::Epub;
 
-use lettre::{
-    message::{header::ContentType, Attachment},
-    Message, SmtpTransport, Transport,
-};
+use reqwest::multipart;
+use serde::Serialize;
 use sqlx::PgPool;
 use tokio::time::interval;
 
@@ -20,21 +18,93 @@ use super::{
     },
 };
 
+#[derive(Debug, Serialize)]
+struct Attachement {
+    file: String,
+    description: String,
+    filename: String,
+}
+
+#[derive(Debug, Serialize)]
+struct EmbedField {
+    name: String,
+    value: String,
+}
+
+#[derive(Debug, Serialize)]
+struct Embed {
+    title: String,
+    #[serde(rename = "type")]
+    r#type: String,
+    description: String,
+    color: u32,
+    fields: Vec<EmbedField>,
+}
+
+#[derive(Debug, Serialize)]
+struct Message {
+    content: String,
+    embeds: Vec<Embed>,
+}
+
+struct MessageBuilder {
+    content: String,
+    book_name: String,
+    from: i32,
+    to: i32,
+}
+
+impl MessageBuilder {
+    fn new() -> Self {
+        Self {
+            content: "Your book is ready!".to_owned(),
+            book_name: "".to_owned(),
+            from: 0,
+            to: 0,
+        }
+    }
+
+    fn book_name(mut self, book_name: String) -> Self {
+        self.book_name = book_name;
+        self
+    }
+
+    fn from(mut self, from: i32) -> Self {
+        self.from = from;
+        self
+    }
+
+    fn to(mut self, to: i32) -> Self {
+        self.to = to;
+        self
+    }
+
+    fn build(self) -> Message {
+        Message {
+            content: self.content,
+            embeds: vec![Embed {
+                title: self.book_name,
+                r#type: "file".to_owned(),
+                description: format!("From chapter {} to chapter {}", self.from, self.to),
+                color: 0x91288a,
+                fields: vec![],
+            }],
+        }
+    }
+}
+
 #[tokio::main]
-pub async fn start(database_url: String, mailer: SmtpTransport, send_to: String, from: String) {
+pub async fn start(database_url: String, webhook_url: String) {
     let mut interval = interval(Duration::from_secs(60 * 60 * 6));
 
     loop {
         interval.tick().await;
         let pool = pool::mk_pool(database_url.clone()).await;
-        export(pool, &mailer, &send_to, &from)
-            .await
-            .close()
-            .await;
+        export(pool, &webhook_url).await.close().await;
     }
 }
 
-async fn export(pool: PgPool, mailer: &SmtpTransport, send_to: &String, from: &String) -> PgPool {
+async fn export(pool: PgPool, webhook_url: &String) -> PgPool {
     let exports: Vec<Export> = {
         sqlx::query_as!(
             Export,
@@ -84,33 +154,45 @@ async fn export(pool: PgPool, mailer: &SmtpTransport, send_to: &String, from: &S
                 .await
                 .unwrap();
 
-                let from = format!("Wuxia2Kindle <{}>", from);
+                let (book_id, from, to) = match export.meta {
+                    ExportKinds::ChaptersRange { book_id, chapters } => {
+                        (book_id, chapters.0, chapters.1)
+                    }
+                    _ => todo!(),
+                };
+                let book = sqlx::query_as!(Book, "SELECT * FROM books WHERE id = $1", book_id,)
+                    .fetch_one(&pool)
+                    .await
+                    .expect("book not found");
+
+                let message = MessageBuilder::new()
+                    .book_name(book.name)
+                    .from(from)
+                    .to(to)
+                    .build();
+
                 let filebody = std::fs::read(&path).unwrap();
-                let content_type = ContentType::parse("application/epub+zip").unwrap();
-                let attachement =
-                    Attachment::new("book.epub".to_owned()).body(filebody, content_type);
-                let email = Message::builder()
-                    .from(from.parse().unwrap())
-                    .reply_to(from.parse().unwrap())
-                    .to(format!("Kindle <{}>", send_to).parse().unwrap())
-                    .singlepart(attachement)
+                let file_part = multipart::Part::bytes(filebody)
+                    .file_name("book.epub")
+                    .mime_str("application/epub+zip")
+                    .unwrap();
+                let json_part = multipart::Part::text(serde_json::to_string(&message).unwrap());
+                let form = reqwest::multipart::Form::new()
+                    .part("book.epub", file_part)
+                    .part("payload_json", json_part);
+
+                println!("Sending epub");
+                let res = reqwest::Client::new()
+                    .post(webhook_url)
+                    .multipart(form)
+                    .send()
+                    .await
                     .unwrap();
 
-                println!("Sending email");
-                match &mailer.send(&email) {
-                    Ok(_) => {
-                        println!("Sent {path}");
-                        sqlx::query!(
-                            "UPDATE exports 
-                            SET sent = true
-                            WHERE id = $1",
-                            export.id,
-                        )
-                        .execute(&pool)
-                        .await
-                        .unwrap();
-                    }
-                    Err(e) => panic!("could not send email: {:?}", e),
+                if res.status().is_success() {
+                    println!("Epub sent");
+                } else {
+                    println!("Epub not sent");
                 }
             }
         }

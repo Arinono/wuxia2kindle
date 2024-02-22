@@ -11,13 +11,7 @@ primary_region = 'ams'
 [env]
   API_URL = "https://wuxia2kindle.arino.io"
   DOMAIN = "wuxia2kindle.arino.io"
-  SMTP_SERVER = "smtp.sendgrid.net"
-  SMTP_PORT = "587"
-  SMTP_USER = "apikey"
-  SEND_TO = "arinono@kindle.com"
-  FROM = "kindle@arino.io"
   DISCORD_REDIRECT_URI = "https://wuxia2kindle.arino.io/auth/discord/callback"
-  WORKER_URL = "http://worker.process.wuxia2kindle.internal:3001"
 
 [processes]
   server = '/app/bin server'

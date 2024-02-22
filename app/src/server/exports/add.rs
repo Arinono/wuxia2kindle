@@ -27,10 +27,6 @@ pub async fn add_to_queue(
     .await
     {
         Ok(_) => {
-            let url = std::env::var("WORKER_URL");
-            if url.is_ok() {
-                reqwest::get(format!("{}/ping", url.unwrap())).await.unwrap();
-            }
             (StatusCode::CREATED, Html("Export added to queue"))
         }
         Err(e) => {
