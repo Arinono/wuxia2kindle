@@ -141,6 +141,8 @@ async fn shutdown_signal() {
         _ = ctrl_c => {},
         _ = terminate => {},
     }
+    println!("Shutting down gracefully...");
+    // pool.close().await;
 }
 
 async fn not_found() -> Result<Html<String>, Error> {
@@ -224,6 +226,33 @@ where
 {
     fn from(e: E) -> Self {
         Self::AppError(e.into())
+    }
+}
+
+struct DatabaseConnection(sqlx::pool::PoolConnection<sqlx::Postgres>);
+
+fn sqlx_error_mapper(e: sqlx::Error) -> Error {
+    tracing::error!("SQLx error: {:#}", e);
+    Error::AppError(e.into())
+}
+
+#[async_trait]
+impl<S> FromRequestParts<S> for DatabaseConnection
+where
+    PgPool: FromRef<S>,
+    S: Send + Sync,
+{
+    type Rejection = Error;
+
+    async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let pool = PgPool::from_ref(state);
+
+        let conn = pool
+            .acquire()
+            .await
+            .map_err(sqlx_error_mapper)?;
+
+        Ok(Self(conn))
     }
 }
 
