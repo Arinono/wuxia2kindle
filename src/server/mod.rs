@@ -172,6 +172,7 @@ pub enum Error {
     NotFound(String),
     UserAlreadyLoggedIn,
     Unauthenticated,
+    #[allow(clippy::enum_variant_names)]
     AppError(anyhow::Error),
     AuthRedirect,
 }
@@ -247,10 +248,7 @@ where
     async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let pool = PgPool::from_ref(state);
 
-        let conn = pool
-            .acquire()
-            .await
-            .map_err(sqlx_error_mapper)?;
+        let conn = pool.acquire().await.map_err(sqlx_error_mapper)?;
 
         Ok(Self(conn))
     }

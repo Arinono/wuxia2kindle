@@ -266,14 +266,14 @@ pub async fn add_to_queue(
             tokio::spawn(async move {
                 run_export(pool, export, &env.discord_webhook).await;
             });
-            return (StatusCode::CREATED, Html("Export added to queue"));
+            (StatusCode::CREATED, Html("Export added to queue"))
         }
         Err(e) => {
             eprintln!("Error adding export to queue: {}", e);
-            return (
+            (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Html("Error adding export to queue"),
-            );
+            )
         }
     }
 }

@@ -43,7 +43,7 @@ impl Epub {
         if let Some(cover) = &self.cover {
             if let Some((mime, rhs)) = cover.split_once(";base64,") {
                 // data:image/png
-                if let Some((_, mime_type)) = mime.split_once(":") {
+                if let Some((_, mime_type)) = mime.split_once(':') {
                     let bin = general_purpose::STANDARD.decode(rhs).unwrap();
                     builder
                         // book cover for file system

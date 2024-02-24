@@ -62,7 +62,7 @@ impl ClaimsBuilder {
 }
 
 #[derive(Debug)]
-pub struct JWT {
+pub struct Jwt {
     pub name: String,
     pub payload: String,
     pub domain: String,
@@ -71,7 +71,7 @@ pub struct JWT {
     pub path: String,
 }
 
-impl JWT {
+impl Jwt {
     pub fn new(user: String) -> Self {
         let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
         let domain = std::env::var("DOMAIN").expect("DOMAIN must be set");
@@ -137,10 +137,10 @@ impl JWT {
     }
 }
 
-impl Display for JWT {
+impl Display for Jwt {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let max_age = match self.max_age {
-            Some(max_age) => format!("{}={};", "Max-Age", max_age.to_string()),
+            Some(max_age) => format!("{}={};", "Max-Age", max_age),
             None => ";".to_owned(),
         };
 

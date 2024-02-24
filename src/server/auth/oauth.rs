@@ -26,7 +26,7 @@ pub struct OAuthUser {
 
 trait OAuth {
     fn authorize_url(&self) -> String;
-    fn get_token_construct(&self, code: &String) -> (HeaderMap, HashMap<String, String>);
+    fn get_token_construct(&self, code: &str) -> (HeaderMap, HashMap<String, String>);
 }
 
 impl OAuth for DiscordAuth {
@@ -39,7 +39,7 @@ impl OAuth for DiscordAuth {
         )
     }
 
-    fn get_token_construct(&self, code: &String) -> (HeaderMap, HashMap<String, String>) {
+    fn get_token_construct(&self, code: &str) -> (HeaderMap, HashMap<String, String>) {
         let mut headers = HeaderMap::new();
         headers.insert(
             "Content-type",
@@ -51,11 +51,11 @@ impl OAuth for DiscordAuth {
         );
 
         let mut form = HashMap::new();
-        form.insert("client_id".to_owned(), self.client_id.clone());
-        form.insert("client_secret".to_owned(), self.client_secret.clone());
+        form.insert("client_id".to_owned(), self.client_id.to_owned());
+        form.insert("client_secret".to_owned(), self.client_secret.to_owned());
         form.insert("grant_type".to_owned(), "authorization_code".to_owned());
-        form.insert("code".to_owned(), code.clone());
-        form.insert("redirect_uri".to_owned(), self.redirect_uri.clone());
+        form.insert("code".to_owned(), code.to_owned());
+        form.insert("redirect_uri".to_owned(), self.redirect_uri.to_owned());
 
         (headers, form)
     }
@@ -73,7 +73,7 @@ impl Service {
         }
     }
 
-    pub async fn get_token(&self, code: &String) -> Result<OAuthToken, Error> {
+    pub async fn get_token(&self, code: &str) -> Result<OAuthToken, Error> {
         match self {
             Service::Discord(discord) => {
                 let (headers, form) = discord.get_token_construct(code);

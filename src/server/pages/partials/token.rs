@@ -34,7 +34,7 @@ pub async fn get_token(user: User, State(pool): State<PgPool>) -> Result<GetToke
     match result {
         Err(e) => {
             println!("Error updating token: {}", e);
-            return Err(Error::AppError(e.into()));
+            Err(Error::AppError(e.into()))
         }
         Ok(_) => Ok(GetTokenTemplate { token: user_token }),
     }

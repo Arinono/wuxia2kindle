@@ -9,7 +9,7 @@ use reqwest::header::SET_COOKIE;
 use serde::Deserialize;
 use sqlx::PgPool;
 
-use super::{super::Error, discord::DiscordAuth, jwt::JWT, oauth::Service, user::User};
+use super::{super::Error, discord::DiscordAuth, jwt::Jwt, oauth::Service, user::User};
 
 #[derive(Debug, Deserialize)]
 pub struct CallbackQueryParam {
@@ -65,7 +65,7 @@ pub async fn login_callback(
         .await?;
     }
 
-    let jwt = JWT::new(db_user.unwrap().id.to_string());
+    let jwt = Jwt::new(db_user.unwrap().id.to_string());
 
     headers.insert(
         SET_COOKIE,
