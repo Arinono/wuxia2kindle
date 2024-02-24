@@ -1,4 +1,5 @@
 pub mod add;
+mod epub;
 
 use serde::{Deserialize, Serialize};
 use sqlx::types::{

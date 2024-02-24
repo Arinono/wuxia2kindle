@@ -1,59 +1,60 @@
-const API = "http://localhost:3000/chapter"
-const AUTH = "Basic ******"
-const METADATA_ATTR = "data-amplitude-params"
+//const API = "http://localhost:3000/chapter"
+const API = "https://wuxia2kindle.arino.io/chapter";
+const AUTH = "Bearer ***";
+const METADATA_ATTR = "data-amplitude-params";
 // https://www.wuxiaworld.com/novel/rmjiir/rmjiir-chapter-20
-const TO = null // 'dr-chapter-293'
+const TO = null; // 'irhsg-chapter-292'
 
-const btn = document.createElement("div")
-btn.classList.add("wuxia2kindle-btn")
-btn.addEventListener('click', onClick)
+const btn = document.createElement("div");
+btn.classList.add("wuxia2kindle-btn");
+btn.addEventListener("click", onClick);
 
 function safeParse(obj) {
   try {
-    return JSON.parse(obj)
+    return JSON.parse(obj);
   } catch (e) {
-    console.warn(e)
-    return null
+    console.warn(e);
+    return null;
   }
 }
 
 function sleep(t) {
-  return new Promise(resolve => setTimeout(resolve, t * 1000))
+  return new Promise((resolve) => setTimeout(resolve, t * 1000));
 }
 
 function getContent() {
-  const contents = Array.from(document.querySelectorAll('.chapter-content p'))
-  contents.map(el => el.querySelector('button[type="button"]')?.remove())
+  const contents = Array.from(document.querySelectorAll(".chapter-content p"));
+  contents.map((el) => el.querySelector('button[type="button"]')?.remove());
 
-  const content = contents.map(el => el.innerText).join('<p>')
+  const content = contents.map((el) => el.innerText).join("<p>");
 
-  return content
+  return content;
 }
 
 function green() {
-  base()
-  btn.classList.add("green")
+  base();
+  btn.classList.add("green");
 }
 
 function red(err) {
-  base()
-  btn.classList.add("red")
-  console.warn(err)
+  base();
+  btn.classList.add("red");
+  console.warn(err);
 }
 
 function base() {
-  btn.classList.remove("green")
-  btn.classList.remove("red")
+  btn.classList.remove("green");
+  btn.classList.remove("red");
 }
 
 async function onClick() {
   if (TO !== null) {
-    await sleep(3)
+    await sleep(3);
   }
-  const dataContainer = document.querySelector(`[${METADATA_ATTR}]`)
-  const metadata = safeParse(dataContainer.getAttribute(METADATA_ATTR))
+  const dataContainer = document.querySelector(`[${METADATA_ATTR}]`);
+  const metadata = safeParse(dataContainer.getAttribute(METADATA_ATTR));
   if (!safeParse) {
-    return
+    return;
   }
 
   const content = getContent();
@@ -65,23 +66,23 @@ async function onClick() {
     author: metadata.novelWriter,
     translator: metadata.novelTranslator,
     content,
-  }
+  };
 
   send(chapter)
     .then(green)
     .catch(red)
-    .finally(async() => {
-      await sleep(.5)
-      base()
-    })
+    .finally(async () => {
+      await sleep(0.5);
+      base();
+    });
 
   if (TO !== null) {
-    const url = location.href.split('/')
-    const chap = url.splice(-1)[0]
-    const base = url.join('/')
+    const url = location.href.split("/");
+    const chap = url.splice(-1)[0];
+    const base = url.join("/");
     if (chap !== TO) {
-      const nb = parseInt(chap.replace(/\D/g, ''))
-      location.href = `${base}/${chap.replace(/\d+/g, nb + 1)}`
+      const nb = parseInt(chap.replace(/\D/g, ""));
+      location.href = `${base}/${chap.replace(/\d+/g, nb + 1)}`;
     }
   }
 }
@@ -93,27 +94,28 @@ function send(chapter) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": AUTH,
+          Authorization: AUTH,
+          "X-Username": "arinono",
         },
         body: JSON.stringify(chapter),
       });
 
       if (response.status >= 300) {
-        reject("failed to send")
+        reject("failed to send");
       } else {
-        resolve()
+        resolve();
       }
     } catch (e) {
       reject(e);
     }
-  })
+  });
 }
 
 function loaded() {
-  document.body.appendChild(btn)
+  document.body.appendChild(btn);
   if (TO !== null) {
-    onClick()
+    onClick();
   }
 }
 
-document.addEventListener("DOMContentLoaded", loaded)
+document.addEventListener("DOMContentLoaded", loaded);

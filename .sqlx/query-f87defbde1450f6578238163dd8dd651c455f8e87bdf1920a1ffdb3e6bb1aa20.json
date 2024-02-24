@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE exports\n                    SET sent = true\n                    WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f87defbde1450f6578238163dd8dd651c455f8e87bdf1920a1ffdb3e6bb1aa20"
+}

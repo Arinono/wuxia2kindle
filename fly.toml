@@ -13,17 +13,12 @@ primary_region = 'ams'
   DOMAIN = "wuxia2kindle.arino.io"
   DISCORD_REDIRECT_URI = "https://wuxia2kindle.arino.io/auth/discord/callback"
 
-[processes]
-  server = '/app/bin server'
-  worker = '/app/bin worker'
-
 [http_service]
   internal_port = 3000
   force_https = true
   auto_stop_machines = true
   auto_start_machines = true
   min_machines_running = 0
-  processes = ['server']
 
 [[http_service.checks]]
   grace_period = "5s"
@@ -31,7 +26,6 @@ primary_region = 'ams'
   method = "GET"
   timeout = "5s"
   path = "/health"
-  process = ["server"]
 
 [[vm]]
   size = 'shared-cpu-1x'

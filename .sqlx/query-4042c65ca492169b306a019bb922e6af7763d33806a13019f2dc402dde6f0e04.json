@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM chapters\n                   WHERE book_id = $1\n                       AND number_in_book >= $2\n                       AND number_in_book <= $3\n                   ORDER BY number_in_book ASC",
+  "query": "SELECT * FROM chapters\n                    WHERE book_id = $1\n                       AND number_in_book >= $2\n                       AND number_in_book <= $3\n                    ORDER BY number_in_book ASC",
   "describe": {
     "columns": [
       {
@@ -44,5 +44,5 @@
       false
     ]
   },
-  "hash": "a98a105461ba797d732673a01e5864d7ec010d075cea3e90355193dd022a3afb"
+  "hash": "4042c65ca492169b306a019bb922e6af7763d33806a13019f2dc402dde6f0e04"
 }

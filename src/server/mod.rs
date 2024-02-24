@@ -11,7 +11,7 @@ use self::{
     exports::add::add_to_queue,
     health::health,
 };
-use super::pool;
+use super::{env::Environment, pool};
 use askama::Template;
 use axum::{
     async_trait,
@@ -34,8 +34,7 @@ use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
-pub async fn start(port: u16, database_url: String) {
-    let domain = std::env::var("DOMAIN").expect("DOMAIN must be set");
+pub async fn start(env: Environment) {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -44,8 +43,11 @@ pub async fn start(port: u16, database_url: String) {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let pool = pool::mk_pool(database_url).await;
-    let app_state = AppState { pool };
+    let pool = pool::mk_pool(env.database_url.clone()).await;
+    let app_state = AppState {
+        pool,
+        environment: env.clone(),
+    };
 
     // build our application with a route
     let app = Router::new()
@@ -77,7 +79,7 @@ pub async fn start(port: u16, database_url: String) {
             CorsLayer::new()
                 .allow_credentials(true)
                 .allow_origin(vec![
-                    domain.parse::<HeaderValue>().unwrap(),
+                    env.domain.parse::<HeaderValue>().unwrap(),
                     "https://www.wuxiaworld.com".parse::<HeaderValue>().unwrap(),
                 ])
                 .allow_methods([Method::GET, Method::POST, Method::OPTIONS, Method::PATCH])
@@ -108,7 +110,7 @@ pub async fn start(port: u16, database_url: String) {
         .layer(DefaultBodyLimit::max(5_242_880))
         .with_state(app_state);
 
-    let addr: SocketAddr = format!("[::]:{port}").parse().unwrap();
+    let addr: SocketAddr = format!("[::]:{}", env.port).parse().unwrap();
     tracing::debug!("Listening on:\n{addr}");
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
@@ -148,11 +150,18 @@ async fn not_found() -> Result<Html<String>, Error> {
 #[derive(Clone)]
 struct AppState {
     pool: PgPool,
+    environment: Environment,
 }
 
 impl FromRef<AppState> for PgPool {
     fn from_ref(state: &AppState) -> Self {
         state.pool.clone()
+    }
+}
+
+impl FromRef<AppState> for Environment {
+    fn from_ref(state: &AppState) -> Self {
+        state.environment.clone()
     }
 }
 

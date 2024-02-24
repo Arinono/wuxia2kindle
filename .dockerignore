@@ -1,3 +1,4 @@
 boost
-app/target
-app/result
+target
+result
+.devenv

@@ -1,8 +1,0 @@
-build:
-  cargo build --release
-
-worker:
-  cargo run -- worker
-
-server:
-  cargo run -- server
