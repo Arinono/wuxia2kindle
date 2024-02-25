@@ -48,3 +48,4 @@ url = "2.4.1"
 uuid = { version = "1.4.0", features = ["v4"] }
 rand = "0.8.5"
 bcrypt = "0.15.0"
+sentry = "0.32.2"
