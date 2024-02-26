@@ -5,6 +5,18 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[bin]]
+name = "checksum"
+path = "src/bin/checksum/main.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "add_cover"
+path = "src/bin/add_cover/main.rs"
+test = false
+bench = false
+
 [dependencies]
 anyhow = "1.0.71"
 askama = { version = "0.12.1", features = [
@@ -49,3 +61,5 @@ uuid = { version = "1.4.0", features = ["v4"] }
 rand = "0.8.5"
 bcrypt = "0.15.0"
 sentry = "0.32.2"
+sha2 = "0.10.8"
+minio = "0.1.0"

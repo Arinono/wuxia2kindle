@@ -13,4 +13,10 @@
       }
     ];
   };
+
+  services.minio = {
+    enable = true;
+    browser = true;
+    buckets = [ "covers" ];
+  };
 }
