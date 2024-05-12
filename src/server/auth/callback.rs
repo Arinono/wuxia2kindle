@@ -5,11 +5,12 @@ use axum::{
     http::HeaderMap,
     response::{Html, IntoResponse},
 };
+use models::user::User;
 use reqwest::header::SET_COOKIE;
 use serde::Deserialize;
 use sqlx::PgPool;
 
-use super::{super::Error, discord::DiscordAuth, jwt::Jwt, oauth::Service, user::User};
+use super::{super::Error, discord::DiscordAuth, jwt::Jwt, oauth::Service};
 
 #[derive(Debug, Deserialize)]
 pub struct CallbackQueryParam {

@@ -4,12 +4,10 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Json},
 };
+use models::book::Book;
 use sqlx::PgPool;
 
-use super::{
-    Book,
-    Responses::{Empty, GetBook, GetBooks},
-};
+use super::Responses::{Empty, GetBook, GetBooks};
 
 #[allow(dead_code)]
 #[debug_handler]

@@ -4,9 +4,10 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
+use models::book::Book;
 use sqlx::PgPool;
 
-use super::{Book, UpdateBook};
+use super::UpdateBook;
 
 #[allow(dead_code)]
 #[debug_handler]

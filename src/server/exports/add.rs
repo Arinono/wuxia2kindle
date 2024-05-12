@@ -4,6 +4,7 @@ use axum::{
     response::{Html, IntoResponse},
     Form,
 };
+use models::export::{Export, ExportKinds};
 use sqlx::PgPool;
 
 use reqwest::multipart;
@@ -14,18 +15,11 @@ use crate::{
     server::{
         books::Book,
         chapters::Chapter,
-        exports::{epub::Epub, Export},
+        exports::epub::{Epub, MyEpub},
     },
 };
 
-use super::{AddToQueue, ExportKinds};
-
-#[derive(Debug, Serialize)]
-struct Attachement {
-    file: String,
-    description: String,
-    filename: String,
-}
+use super::AddToQueue;
 
 #[derive(Debug, Serialize)]
 struct EmbedField {
@@ -97,7 +91,7 @@ impl MessageBuilder {
 
 async fn run_export(pool: PgPool, export: Export, webhook_url: &String) {
     sqlx::query!(
-        "UPDATE exports 
+        "UPDATE exports
         SET processing_started_at = CURRENT_TIMESTAMP
         WHERE id = $1",
         export.id,
@@ -109,7 +103,7 @@ async fn run_export(pool: PgPool, export: Export, webhook_url: &String) {
     match process(export.clone(), &pool).await {
         Err(err) => {
             sqlx::query!(
-                "UPDATE exports 
+                "UPDATE exports
                 SET processed_at = CURRENT_TIMESTAMP,
                     error = $2
                 WHERE id = $1",
@@ -122,7 +116,7 @@ async fn run_export(pool: PgPool, export: Export, webhook_url: &String) {
         }
         Ok(path) => {
             sqlx::query!(
-                "UPDATE exports 
+                "UPDATE exports
                 SET processed_at = CURRENT_TIMESTAMP
                 WHERE id = $1",
                 export.id,
@@ -220,7 +214,7 @@ async fn process(export: Export, pool: &PgPool) -> Result<String, String> {
             };
 
             if let Some(book) = o_book.clone() {
-                let epub = Epub {
+                let epub = MyEpub(Epub {
                     title: book.name,
                     author: book.author,
                     translator: book.translator,
@@ -229,7 +223,7 @@ async fn process(export: Export, pool: &PgPool) -> Result<String, String> {
                         .into_iter()
                         .map(|c| (c.name, c.content))
                         .collect::<Vec<(String, String)>>(),
-                };
+                });
 
                 let filepath = epub.generate().unwrap();
 

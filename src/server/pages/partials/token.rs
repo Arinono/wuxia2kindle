@@ -4,7 +4,7 @@ use bcrypt::{hash, DEFAULT_COST};
 use rand::{distributions::Alphanumeric, Rng};
 use sqlx::PgPool;
 
-use crate::server::{auth::user::User, Error};
+use crate::server::{auth::AuthKind, Error};
 
 #[derive(Template)]
 #[template(path = "partials/token.html")]
@@ -12,7 +12,15 @@ pub struct GetTokenTemplate {
     token: String,
 }
 
-pub async fn get_token(user: User, State(pool): State<PgPool>) -> Result<GetTokenTemplate, Error> {
+pub async fn get_token(
+    auth: AuthKind,
+    State(pool): State<PgPool>,
+) -> Result<GetTokenTemplate, Error> {
+    let user = match auth.human() {
+        Ok(user) => user,
+        Err(e) => return Err(e),
+    };
+
     let thread_rng = rand::thread_rng();
     let salt = std::env::var("SALT").expect("SALT must be set");
     let mut token: String = thread_rng

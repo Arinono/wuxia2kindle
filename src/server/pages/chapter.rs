@@ -2,7 +2,7 @@ use askama::Template;
 use axum::extract::{Path, State};
 use sqlx::PgPool;
 
-use crate::server::{auth::user::User, Error};
+use crate::server::{auth::AuthKind, Error};
 
 #[derive(Template)]
 #[template(path = "chapter.html")]
@@ -17,10 +17,14 @@ struct ChapterQuery {
 }
 
 pub async fn chapter(
-    _user: User,
+    auth: AuthKind,
     State(pool): State<PgPool>,
     Path(id): Path<i32>,
 ) -> Result<ChapterTemplate, Error> {
+    if let Err(error) = auth.human() {
+        return Err(error);
+    }
+
     let chapter = sqlx::query_as!(
         ChapterQuery,
         "SELECT name, content FROM chapters WHERE id = $1",

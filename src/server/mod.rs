@@ -6,7 +6,7 @@ pub mod health;
 pub mod pages;
 
 use self::{
-    auth::{callback::login_callback, cookie::get_cookie, logout::logout, user::User},
+    auth::{callback::login_callback, cookie::get_cookie, logout::logout, AuthKind},
     chapters::{add::add_chapter, get::get_chapters},
     exports::add::add_to_queue,
     health::health,
@@ -25,6 +25,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
+use models::user::User;
 use sqlx::PgPool;
 use std::{net::SocketAddr, time::Duration};
 use tokio::signal;
@@ -175,6 +176,7 @@ pub enum Error {
     #[allow(clippy::enum_variant_names)]
     AppError(anyhow::Error),
     AuthRedirect,
+    Forbidden,
 }
 
 #[derive(Template)]
@@ -190,7 +192,7 @@ pub struct AppErrorTemplate {
 }
 
 impl IntoResponse for Error {
-    fn into_response(self) -> askama_axum::Response {
+    fn into_response(self) -> axum::response::Response {
         match self {
             Self::NotFound(message) => {
                 let body = NotFoundTemplate { message }.render().unwrap();
@@ -202,10 +204,10 @@ impl IntoResponse for Error {
                 .header("Location", "/")
                 .body(body::boxed(Empty::new()))
                 .unwrap(),
-            Self::Unauthenticated => Response::builder()
-                .status(StatusCode::UNAUTHORIZED)
-                .body(body::boxed(Empty::new()))
-                .unwrap(),
+            Self::Unauthenticated => {
+                (StatusCode::UNAUTHORIZED, body::boxed(Empty::new())).into_response()
+            }
+            Self::Forbidden => (StatusCode::FORBIDDEN, body::boxed(Empty::new())).into_response(),
             Self::AppError(e) => {
                 tracing::error!("Application error: {:#}", e);
                 let body = AppErrorTemplate {
@@ -230,6 +232,7 @@ where
     }
 }
 
+#[allow(dead_code)]
 struct DatabaseConnection(sqlx::pool::PoolConnection<sqlx::Postgres>);
 
 fn sqlx_error_mapper(e: sqlx::Error) -> Error {
@@ -254,8 +257,24 @@ where
     }
 }
 
+impl AuthKind {
+    pub fn human(&self) -> Result<&User, Error> {
+        match self {
+            Self::Human(user) => Ok(user),
+            Self::Machine(_) => Err(Error::Forbidden),
+        }
+    }
+
+    pub fn machine(&self) -> Result<&User, Error> {
+        match self {
+            Self::Human(_) => Err(Error::Forbidden),
+            Self::Machine(machine) => Ok(machine),
+        }
+    }
+}
+
 #[async_trait]
-impl<S> FromRequestParts<S> for User
+impl<S> FromRequestParts<S> for AuthKind
 where
     PgPool: FromRef<S>,
     S: Send + Sync,
@@ -276,7 +295,7 @@ where
                     .await
                     .ok_or(Error::AuthRedirect)?;
 
-                Ok(user)
+                Ok(AuthKind::Human(user))
             }
             None => {
                 let username = parts
@@ -311,7 +330,7 @@ where
                 let is_token_valid = bcrypt::verify(format!("{}{}", token, salt), &hashed);
 
                 match is_token_valid {
-                    Ok(true) => Ok(user),
+                    Ok(true) => Ok(AuthKind::Machine(user)),
                     _ => Err(Error::Unauthenticated),
                 }
             }

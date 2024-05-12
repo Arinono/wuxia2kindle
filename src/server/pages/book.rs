@@ -3,7 +3,7 @@ use askama::Template;
 use axum::extract::{Path, State};
 use sqlx::PgPool;
 
-use crate::server::{auth::user::User, Error};
+use crate::server::{auth::AuthKind, Error};
 
 struct NoCoverBook {
     id: i32,
@@ -41,10 +41,14 @@ struct BookAndChaptersQuery {
 }
 
 pub async fn book(
-    _user: User,
+    auth: AuthKind,
     State(pool): State<PgPool>,
     Path(book_id): Path<i32>,
 ) -> Result<BookAndChaptersTemplate, Error> {
+    if let Err(error) = auth.human() {
+        return Err(error);
+    }
+
     let response = sqlx::query_as!(
         BookAndChaptersQuery,
         "

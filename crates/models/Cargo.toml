@@ -1,0 +1,15 @@
+[package]
+name = "models"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chrono = "0.4.38"
+serde = { version = "1.0.200", features = ["derive"], optional = true }
+serde_json = { version = "1.0.116", optional = true }
+sqlx = { version = "0.7.4", features = ["postgres", "runtime-tokio-rustls", "time", "chrono"], optional = true }
+
+[features]
+default = []
+serde = ["dep:serde", "dep:serde_json"]
+sqlx = ["dep:sqlx"]

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use askama::Template;
 
-use crate::server::{auth::user::User, Error};
+use crate::server::{auth::AuthKind, Error};
 
 #[derive(Template)]
 #[template(path = "login.html")]
@@ -9,8 +9,8 @@ pub struct LoginTemplate {
     title: String,
 }
 
-pub async fn login(user: Option<User>) -> Result<LoginTemplate, Error> {
-    if user.is_some() {
+pub async fn login(auth: Option<AuthKind>) -> Result<LoginTemplate, Error> {
+    if auth.is_some() {
         return Err(Error::UserAlreadyLoggedIn);
     }
 

@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 
 use axum::http::HeaderMap;
+use models::user::User;
 use sqlx::PgPool;
 
-use super::{jwt::Jwt, user::User};
+use super::jwt::Jwt;
 
 pub static COOKIE_NAME: &str = "wuxia2kindle_session";
 

@@ -1,16 +1,20 @@
 use axum::{debug_handler, extract::State, http::StatusCode, response::IntoResponse, Json};
+use models::book::Book;
 use sqlx::PgPool;
 
-use crate::server::auth::user::User;
+use crate::server::{auth::AuthKind, Error};
 
-use super::{super::books::Book, AddChapter, Responses};
+use super::{AddChapter, Responses};
 
 #[debug_handler]
 pub async fn add_chapter(
-    _user: User,
+    auth: AuthKind,
     State(pool): State<PgPool>,
     Json(input): Json<AddChapter>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, Error> {
+    if let Err(error) = auth.machine() {
+        return Err(error);
+    }
     println!("Received chapter: {input}");
 
     let mut o_book: Option<Book> = {
@@ -75,8 +79,8 @@ pub async fn add_chapter(
         .unwrap();
     }
 
-    (
+    Ok((
         StatusCode::CREATED,
         Json(Responses::AddChapter { success: true }),
-    )
+    ))
 }

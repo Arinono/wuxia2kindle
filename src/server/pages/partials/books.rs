@@ -3,7 +3,7 @@ use askama::Template;
 use axum::extract::State;
 use sqlx::PgPool;
 
-use crate::server::{auth::user::User, books::Book, Error};
+use crate::server::{auth::AuthKind, books::Book, Error};
 
 pub struct MinimalBook {
     name: String,
@@ -16,7 +16,11 @@ pub struct Books {
     books: Vec<MinimalBook>,
 }
 
-pub async fn books(_user: User, State(pool): State<PgPool>) -> Result<Books, Error> {
+pub async fn books(auth: AuthKind, State(pool): State<PgPool>) -> Result<Books, Error> {
+    if let Err(error) = auth.human() {
+        return Err(error);
+    }
+
     let response = sqlx::query_as!(Book, "SELECT * FROM books")
         .fetch_all(&pool)
         .await?;

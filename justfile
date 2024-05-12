@@ -1,5 +1,8 @@
 build:
   cargo build --release
 
-start:
+run:
   cargo run
+
+start:
+  ./target/release/wuxia2kindle
