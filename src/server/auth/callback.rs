@@ -5,7 +5,10 @@ use axum::{
     http::HeaderMap,
     response::{Html, IntoResponse},
 };
-use models::user::User;
+use models::{
+    repository::{Repository, RepositoryError},
+    user::User,
+};
 use reqwest::header::SET_COOKIE;
 use serde::Deserialize;
 use sqlx::PgPool;
@@ -38,35 +41,31 @@ pub async fn login_callback(
 
     let user = service.get_user(&token).await.unwrap();
 
-    let db_user = match service {
-        Service::Discord(_) => {
-            sqlx::query_as!(
-                User,
-                "SELECT * FROM users WHERE discord_id = $1 LIMIT 1",
-                user.id,
-            )
-            .fetch_optional(&pool)
-            .await?
-        }
+    let maybe_db_user = match service {
+        Service::Discord(_) => User::get_by_discord_id(&pool, user.id).await,
     };
 
-    if db_user.is_none() {
-        // only allowing one user (me) for now
-        // the real impl would be to add the user
-        return Ok((headers, Html("User not found")));
-    }
+    let mut db_user = match maybe_db_user {
+        Ok(user) => user,
+        Err(error) => match error {
+            // only allowing one user (me) for now
+            // the real impl would be to add the user
+            RepositoryError::NotFound => return Ok((headers, Html("User not found"))),
+            _ => return Err(Error::AppError(anyhow::anyhow!("Failed to get user"))),
+        },
+    };
 
     if user.avatar.is_some() {
-        sqlx::query!(
-            "UPDATE users SET avatar = $1 WHERE id = $2",
-            user.avatar,
-            db_user.as_ref().unwrap().id,
-        )
-        .execute(&pool)
-        .await?;
+        db_user.avatar = user.avatar;
+        if let Err(error) = db_user.update(&pool).await {
+            match error {
+                RepositoryError::NotFound => return Ok((headers, Html("User not found"))),
+                _ => return Err(Error::AppError(anyhow::anyhow!("Failed to update user"))),
+            }
+        }
     }
 
-    let jwt = Jwt::new(db_user.unwrap().id.to_string());
+    let jwt = Jwt::new(db_user.id.to_string());
 
     headers.insert(
         SET_COOKIE,

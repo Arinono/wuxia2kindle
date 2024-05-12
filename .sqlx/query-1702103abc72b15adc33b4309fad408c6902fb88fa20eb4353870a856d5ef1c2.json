@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE exports\n        SET processing_started_at = CURRENT_TIMESTAMP\n        WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1702103abc72b15adc33b4309fad408c6902fb88fa20eb4353870a856d5ef1c2"
+}
